@@ -1,0 +1,87 @@
+/* Common */
+"common_settings" = "Settings";
+"common_back" = "Back";
+"common_quit" = "Quit";
+"common_appearance" = "Appearance";
+"common_system" = "System";
+"common_dark" = "Dark";
+"common_light" = "Light";
+"common_tint" = "Tint";
+"common_none" = "None";
+"common_match_macos" = "Match macOS";
+"common_custom" = "Custom";
+"common_language" = "Language";
+"common_language_system" = "System";
+"common_notifications_denied" = "Notifications are denied for this app in System Settings → Notifications.";
+
+/* Settings */
+"settings_section_restore" = "Restore";
+"settings_section_notifications" = "Notifications";
+"settings_section_advanced" = "Advanced";
+"settings_section_general" = "General";
+"settings_auto_restore_toggle" = "Automatically restore on reconnect";
+"settings_auto_restore_description" = "When displays are reconnected and match a saved layout, the saved arrangement is re-applied automatically.";
+"settings_notify_toggle" = "Notify when a layout is restored";
+"settings_settle_label" = "Wait after displays change (s)";
+"settings_settle_description" = "How long to wait for the display configuration to settle before restoring (%d–%d seconds).";
+"settings_launch_at_login" = "Launch at login";
+"settings_launch_hint_unbundled" = "Available only when running the built .app bundle.";
+"settings_launch_hint_approval" = "Approval required: enable it in System Settings → General → Login Items.";
+
+/* Popover */
+"popover_no_displays" = "No displays detected.";
+"popover_saved_confirmation" = "Saved";
+"popover_paused_until" = "Paused until %@";
+"popover_resume" = "Resume";
+"popover_pause_15" = "Pause 15 min";
+"popover_saved_layouts" = "Saved layouts";
+"popover_empty_hint" = "Arrange your displays, then Save Layout to remember this setup.";
+"popover_last_restore" = "Last restore: %@";
+"popover_edit_layout_hint" = "Edit layout — drag displays to rearrange";
+"popover_resume_hint" = "%d min remaining — click to resume now";
+"popover_pause_hint" = "Suspend automatic restore for 15 minutes";
+"popover_save_layout" = "Save Layout";
+"popover_update_layout" = "Update Layout";
+"popover_status_no_displays" = "No displays detected";
+"popover_status_no_saved" = "No saved layout for this set";
+"popover_status_matches" = "Matches “%@”";
+"popover_status_differs" = "Differs from saved “%@”";
+
+/* Display */
+"display_details" = "Display details";
+"display_copied" = "Copied to clipboard";
+"display_copy" = "Copy";
+"display_copy_hint" = "Copy full diagnostics to the clipboard";
+"display_set_main" = "Set as Main Display";
+"display_rotate" = "Rotate";
+"display_edit_layout" = "Edit Layout…";
+"display_rotated_hint" = "Rotated %d°";
+"display_main" = "main";
+"display_count_one" = "%d display";
+"display_count_other" = "%d displays";
+
+/* Editor */
+"editor_title" = "Edit layout";
+"editor_description" = "Drag a display to rearrange it. Right-click to set the main display.";
+"editor_cancel_hint" = "Cancel — discard changes";
+"editor_apply_hint" = "Apply this layout";
+
+/* Profile */
+"profile_name_placeholder" = "Name";
+"profile_count_saved" = "%@ · saved %@";
+"profile_restore" = "Restore";
+"profile_delete_confirm" = "Delete?";
+"profile_rename_hint" = "Double-click to rename";
+"profile_confirm_delete_hint" = "Confirm delete";
+"profile_keep_hint" = "Keep layout";
+"profile_delete_hint" = "Delete layout";
+"profile_default_label" = "Layout (%@)";
+
+/* Notification */
+"notification_paused_title" = "Auto-restore paused";
+"notification_paused_body" = "You changed the layout manually, so automatic restore is paused for %d minutes. It resumes on its own.";
+"notification_restored_title" = "Display layout restored";
+"notification_restored_body" = "Restored “%@” (%@).";
+"notification_restore_failed_title" = "Couldn't restore layout";
+"notification_unmatched_body" = "Connected displays didn't match the saved “%@” layout.";
+"notification_rejected_body" = "macOS rejected the saved “%@” layout.";

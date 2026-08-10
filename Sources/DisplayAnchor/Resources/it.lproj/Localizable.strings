@@ -1,0 +1,87 @@
+/* Common */
+"common_settings" = "Impostazioni";
+"common_back" = "Indietro";
+"common_quit" = "Esci";
+"common_appearance" = "Aspetto";
+"common_system" = "Sistema";
+"common_dark" = "Scuro";
+"common_light" = "Chiaro";
+"common_tint" = "Tinta";
+"common_none" = "Nessuna";
+"common_match_macos" = "Abbina a macOS";
+"common_custom" = "Personalizzata";
+"common_language" = "Lingua";
+"common_language_system" = "Sistema";
+"common_notifications_denied" = "Le notifiche per questa app sono disattivate in Impostazioni di Sistema → Notifiche.";
+
+/* Settings */
+"settings_section_restore" = "Ripristino";
+"settings_section_notifications" = "Notifiche";
+"settings_section_advanced" = "Avanzate";
+"settings_section_general" = "Generali";
+"settings_auto_restore_toggle" = "Ripristina automaticamente alla riconnessione";
+"settings_auto_restore_description" = "Quando ricolleghi gli schermi e corrispondono a un layout salvato, la disposizione viene ripristinata automaticamente.";
+"settings_notify_toggle" = "Avvisami quando un layout viene ripristinato";
+"settings_settle_label" = "Attesa dopo una modifica agli schermi (s)";
+"settings_settle_description" = "Quanto attendere che la configurazione degli schermi si stabilizzi prima di ripristinare (%d–%d secondi).";
+"settings_launch_at_login" = "Avvia all’accesso";
+"settings_launch_hint_unbundled" = "Disponibile solo con l’app compilata (.app).";
+"settings_launch_hint_approval" = "Autorizzazione richiesta: attivala in Impostazioni di Sistema → Generali → Elementi login.";
+
+/* Popover */
+"popover_no_displays" = "Nessuno schermo rilevato.";
+"popover_saved_confirmation" = "Salvato";
+"popover_paused_until" = "In pausa fino alle %@";
+"popover_resume" = "Riprendi";
+"popover_pause_15" = "Pausa 15 min";
+"popover_saved_layouts" = "Layout salvati";
+"popover_empty_hint" = "Disponi gli schermi, poi salva il layout per ricordare questa configurazione.";
+"popover_last_restore" = "Ultimo ripristino: %@";
+"popover_edit_layout_hint" = "Modifica layout — trascina gli schermi per riorganizzarli";
+"popover_resume_hint" = "%d min rimanenti — fai clic per riprendere";
+"popover_pause_hint" = "Sospendi il ripristino automatico per 15 minuti";
+"popover_save_layout" = "Salva layout";
+"popover_update_layout" = "Aggiorna layout";
+"popover_status_no_displays" = "Nessuno schermo rilevato";
+"popover_status_no_saved" = "Nessun layout salvato per questo set";
+"popover_status_matches" = "Corrisponde a “%@”";
+"popover_status_differs" = "Diverso dal salvato “%@”";
+
+/* Display */
+"display_details" = "Dettagli schermo";
+"display_copied" = "Copiato negli appunti";
+"display_copy" = "Copia";
+"display_copy_hint" = "Copia la diagnostica completa negli appunti";
+"display_set_main" = "Imposta come schermo principale";
+"display_rotate" = "Ruota";
+"display_edit_layout" = "Modifica layout…";
+"display_rotated_hint" = "Ruotato di %d°";
+"display_main" = "principale";
+"display_count_one" = "%d schermo";
+"display_count_other" = "%d schermi";
+
+/* Editor */
+"editor_title" = "Modifica layout";
+"editor_description" = "Trascina uno schermo per riorganizzarlo. Fai clic destro per impostare lo schermo principale.";
+"editor_cancel_hint" = "Annulla — ignora le modifiche";
+"editor_apply_hint" = "Applica questo layout";
+
+/* Profile */
+"profile_name_placeholder" = "Nome";
+"profile_count_saved" = "%@ · salvato %@";
+"profile_restore" = "Ripristina";
+"profile_delete_confirm" = "Eliminare?";
+"profile_rename_hint" = "Doppio clic per rinominare";
+"profile_confirm_delete_hint" = "Conferma eliminazione";
+"profile_keep_hint" = "Mantieni il layout";
+"profile_delete_hint" = "Elimina il layout";
+"profile_default_label" = "Layout (%@)";
+
+/* Notification */
+"notification_paused_title" = "Ripristino automatico in pausa";
+"notification_paused_body" = "Hai modificato il layout manualmente, quindi il ripristino automatico è in pausa per %d minuti. Riprenderà da solo.";
+"notification_restored_title" = "Layout schermi ripristinato";
+"notification_restored_body" = "Ripristinato “%@” (%@).";
+"notification_restore_failed_title" = "Impossibile ripristinare il layout";
+"notification_unmatched_body" = "Gli schermi collegati non corrispondono al layout salvato “%@”.";
+"notification_rejected_body" = "macOS ha rifiutato il layout salvato “%@”.";
