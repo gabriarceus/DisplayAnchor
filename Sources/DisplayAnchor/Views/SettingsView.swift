@@ -1,3 +1,4 @@
+import AppKit
 import MenuBarKit
 import ServiceManagement
 import SwiftUI
@@ -9,6 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var config: AppConfig
     @ObservedObject var notifier: Notifier
+    @ObservedObject var updates: UpdateChecker
     let onBack: () -> Void
 
     @Environment(\.localizer) private var l
@@ -46,6 +48,9 @@ struct SettingsView: View {
         .onChange(of: config.notifyOnRestore) { _, enabled in
             if enabled { notifier.requestAuthorizationIfNeeded() }
         }
+        .onChange(of: config.checkForUpdates) { _, enabled in
+            updates.checkIfDue(enabled: enabled)
+        }
         .onChange(of: config.settleSeconds) { _, value in
             // The text field accepts any number; clamp typed values to the range.
             let clamped = min(max(value, Self.settleRange.lowerBound), Self.settleRange.upperBound)
@@ -81,6 +86,7 @@ struct SettingsView: View {
             section(l("settings_section_notifications")) { notificationsSection }
             section(l("settings_section_advanced")) { advancedSection }
             section(l("settings_section_general")) { generalSection }
+            section(l("settings_section_updates")) { updatesSection }
         }
         .padding(Theme.Spacing.m)
     }
@@ -216,6 +222,61 @@ struct SettingsView: View {
         toggleRow(l("settings_launch_at_login"), isOn: $launchAtLogin)
         if let hint = launchAtLoginHint {
             Text(hint)
+                .font(.caption)
+                .foregroundStyle(.orange)
+        }
+    }
+
+    @ViewBuilder
+    private var updatesSection: some View {
+        HStack {
+            Text(l("updates_current_version"))
+            Spacer()
+            Text(updates.currentVersion)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+        toggleRow(l("updates_auto_check"), isOn: $config.checkForUpdates)
+
+        HStack(spacing: Theme.Spacing.s) {
+            Button(l("updates_check_now")) { updates.checkNow() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(updates.status == .checking)
+            Spacer()
+            updateStatusLabel
+        }
+
+        if let update = updates.availableUpdate {
+            Button(l("updates_download", update.version)) {
+                NSWorkspace.shared.open(update.pageURL)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            Text(l("updates_gatekeeper_hint"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var updateStatusLabel: some View {
+        switch updates.status {
+        case .idle:
+            EmptyView()
+        case .checking:
+            ProgressView()
+                .controlSize(.small)
+        case .upToDate:
+            Text(l("updates_up_to_date"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .available(let update):
+            Text(l("updates_available", update.version))
+                .font(.caption)
+                .foregroundStyle(.orange)
+        case .failed:
+            Text(l("updates_check_failed"))
                 .font(.caption)
                 .foregroundStyle(.orange)
         }

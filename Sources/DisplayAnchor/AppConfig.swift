@@ -41,6 +41,7 @@ final class AppConfig: ObservableObject {
         static let appTintMode = "appTintMode"
         static let appTint = "appTint"
         static let appLanguage = "appLanguage"
+        static let checkForUpdates = "checkForUpdates"
     }
 
     private let defaults = UserDefaults.standard
@@ -56,6 +57,9 @@ final class AppConfig: ObservableObject {
     @Published var appTintRaw: String { didSet { defaults.set(appTintRaw, forKey: Keys.appTint) } }
     /// Raw UI language selection; an empty value follows the system language.
     @Published var appLanguageRaw: String { didSet { defaults.set(appLanguageRaw, forKey: Keys.appLanguage) } }
+    /// Whether to poll GitHub Releases for a newer version in the background.
+    /// The manual check in settings ignores this.
+    @Published var checkForUpdates: Bool { didSet { defaults.set(checkForUpdates, forKey: Keys.checkForUpdates) } }
 
     var appAppearance: AppAppearance { AppAppearance(rawValue: appAppearanceRaw) ?? .system }
 
@@ -83,6 +87,7 @@ final class AppConfig: ObservableObject {
             Keys.appTintMode: AppTintMode.none.rawValue,
             Keys.appTint: AppTint.orange.rawValue,
             Keys.appLanguage: "",
+            Keys.checkForUpdates: true,
         ])
         // Migrate the pre-mode tint value: "none" was a tint choice, now a mode.
         if defaults.string(forKey: Keys.appTint) == "none" {
@@ -96,5 +101,6 @@ final class AppConfig: ObservableObject {
         appTintModeRaw = defaults.string(forKey: Keys.appTintMode) ?? AppTintMode.none.rawValue
         appTintRaw = defaults.string(forKey: Keys.appTint) ?? AppTint.orange.rawValue
         appLanguageRaw = defaults.string(forKey: Keys.appLanguage) ?? ""
+        checkForUpdates = defaults.bool(forKey: Keys.checkForUpdates)
     }
 }

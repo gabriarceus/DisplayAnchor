@@ -27,6 +27,17 @@
 "settings_launch_at_login" = "Launch at login";
 "settings_launch_hint_unbundled" = "Available only when running the built .app bundle.";
 "settings_launch_hint_approval" = "Approval required: enable it in System Settings → General → Login Items.";
+"settings_section_updates" = "Updates";
+
+/* Updates */
+"updates_current_version" = "Current version";
+"updates_auto_check" = "Check for updates automatically";
+"updates_check_now" = "Check Now";
+"updates_up_to_date" = "Up to date";
+"updates_check_failed" = "Check failed";
+"updates_available" = "Version %@ available";
+"updates_download" = "Download %@";
+"updates_gatekeeper_hint" = "DisplayAnchor isn't notarized: the first time you open the downloaded app, right-click it and choose Open.";
 
 /* Popover */
 "popover_no_displays" = "No displays detected.";

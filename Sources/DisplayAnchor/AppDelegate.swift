@@ -7,6 +7,7 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let config = AppConfig()
+    private let updateChecker = UpdateChecker()
     private var store: LayoutStore?
     private var statusItem: NSStatusItem?
     private var panel: MenuBarPanel?
@@ -26,7 +27,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.statusItem = statusItem
 
         let panel = MenuBarPanel(
-            rootView: PanelRootView(store: store, config: config, navigation: navigation),
+            rootView: PanelRootView(
+                store: store,
+                config: config,
+                navigation: navigation,
+                updateChecker: updateChecker
+            ),
             width: PopoverView.popoverWidth
         )
         panel.onDismiss = { [weak self] in
@@ -48,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyPanelAppearance()
         store.start()
         renderStatusItem()
+        updateChecker.checkIfDue(enabled: config.checkForUpdates)
     }
 
     /// Forces the panel's appearance for the dark/light settings; system follows
@@ -105,6 +112,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let last = lastPanelDismiss, Date().timeIntervalSince(last) < 0.2 { return }
 
         store?.refreshCurrentState()
+        // Sessions run for weeks, so the launch-time check alone would go stale;
+        // the daily gate makes this a no-op on all but the first open of the day.
+        updateChecker.checkIfDue(enabled: config.checkForUpdates)
         // Present on the next runloop tick: the status-bar button runs a mouse
         // tracking loop on click, and presenting mid-tracking prevents the panel
         // from appearing.

@@ -153,11 +153,43 @@ Click the menu bar icon to open the popover:
 | Notify when a layout is restored     | on      | Post a notification after an automatic restore.                                                                                                  |
 | Wait N seconds after displays change | 3       | How long to wait for the configuration to settle before restoring.                                                                               |
 | Launch at login                      | —       | Registers the app via `SMAppService` (built `.app` bundle only).                                                                                 |
+| Check for updates automatically      | on      | Once a day, look for a newer GitHub release. See [Updates](#updates).                                                                            |
 
 Saved layouts are stored at
 `~/Library/Application Support/DisplayAnchor/profiles.json`
 (a versioned JSON document keyed by display-set fingerprint). Settings live in
 UserDefaults under `io.github.gabriarceus.DisplayAnchor`.
+
+## Updates
+
+DisplayAnchor checks whether a newer version has been released — it does not download
+or install anything. With no Developer ID signature, a real in-app installer would have
+to strip quarantine and swap the running bundle itself; a link to the release page is
+the honest version of that.
+
+- **Where it shows up**: Settings → Updates lists the running version, the automatic
+  check toggle, and a **Check Now** button. When an update exists, the settings gear in
+  the main panel gets an orange dot and a **Download** button appears in Settings.
+- **How it works**: an unauthenticated `GET` to
+  `api.github.com/repos/gabriarceus/DisplayAnchor/releases/latest`, whose `tag_name`
+  is compared against `CFBundleShortVersionString`. The background check runs at most
+  once every 24 hours (at launch and when the panel is opened); network failures and
+  rate limiting are silent — only a manual check reports them.
+- **Turning it off**: the automatic-check toggle. Nothing is sent to GitHub beyond the
+  request itself: no identifier, no telemetry, no account.
+- Downloaded updates are quarantined by macOS like the first install — see
+  [Opening an unsigned app](#opening-an-unsigned-app).
+
+### Cutting a release
+
+```bash
+# 1. bump CFBundleShortVersionString (and CFBundleVersion) in Info.plist, commit
+./release.sh
+```
+
+`release.sh` refuses to run on a dirty tree or an existing tag, builds the app, zips it
+with `ditto`, pushes, and creates the GitHub Release tagged `v<version>` — which is what
+existing installs then see.
 
 ## Localization
 

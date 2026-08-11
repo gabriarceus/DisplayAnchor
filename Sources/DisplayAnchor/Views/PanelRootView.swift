@@ -15,6 +15,7 @@ struct PanelRootView: View {
     @ObservedObject var store: LayoutStore
     @ObservedObject var config: AppConfig
     @ObservedObject var navigation: PanelNavigation<PanelScreen>
+    @ObservedObject var updateChecker: UpdateChecker
     @StateObject private var systemAccent = SystemAccentObserver()
 
     var body: some View {
@@ -37,11 +38,12 @@ struct PanelRootView: View {
         case .main:
             PopoverView(
                 store: store,
+                availableUpdateVersion: updateChecker.availableUpdate?.version,
                 onOpenSettings: { navigation.screen = .settings },
                 onEditLayout: { navigation.screen = .editLayout }
             )
         case .settings:
-            SettingsView(config: store.config, notifier: store.notifier) {
+            SettingsView(config: store.config, notifier: store.notifier, updates: updateChecker) {
                 store.applySettings()
                 navigation.screen = .main
             }

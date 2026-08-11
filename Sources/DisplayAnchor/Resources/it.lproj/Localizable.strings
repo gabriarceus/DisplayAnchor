@@ -27,6 +27,17 @@
 "settings_launch_at_login" = "Avvia all’accesso";
 "settings_launch_hint_unbundled" = "Disponibile solo con l’app compilata (.app).";
 "settings_launch_hint_approval" = "Autorizzazione richiesta: attivala in Impostazioni di Sistema → Generali → Elementi login.";
+"settings_section_updates" = "Aggiornamenti";
+
+/* Updates */
+"updates_current_version" = "Versione attuale";
+"updates_auto_check" = "Controlla automaticamente gli aggiornamenti";
+"updates_check_now" = "Controlla ora";
+"updates_up_to_date" = "Già aggiornata";
+"updates_check_failed" = "Controllo non riuscito";
+"updates_available" = "Versione %@ disponibile";
+"updates_download" = "Scarica %@";
+"updates_gatekeeper_hint" = "DisplayAnchor non è notarizzata: la prima volta che apri l’app scaricata, fai clic destro e scegli Apri.";
 
 /* Popover */
 "popover_no_displays" = "Nessuno schermo rilevato.";

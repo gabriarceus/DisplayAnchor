@@ -9,6 +9,9 @@ struct PopoverView: View {
     static let popoverHeight: CGFloat = 540
 
     @ObservedObject var store: LayoutStore
+    /// Version of a pending update, surfaced as a badge on the settings button —
+    /// a background check the user never sees would be pointless.
+    let availableUpdateVersion: String?
     let onOpenSettings: () -> Void
     let onEditLayout: () -> Void
 
@@ -195,7 +198,17 @@ struct PopoverView: View {
             GlassIconButton(systemImage: "gearshape") {
                 onOpenSettings()
             }
-            .hoverTip(l("common_settings"))
+            .overlay(alignment: .topTrailing) {
+                if availableUpdateVersion != nil {
+                    Circle()
+                        .fill(.orange)
+                        .frame(width: 7, height: 7)
+                        .offset(x: 1, y: -1)
+                }
+            }
+            .hoverTip(
+                availableUpdateVersion.map { l("updates_available", $0) } ?? l("common_settings")
+            )
 
             GlassIconButton(systemImage: "power") {
                 NSApp.terminate(nil)
