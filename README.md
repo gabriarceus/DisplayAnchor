@@ -20,7 +20,10 @@ for a new release, which you can turn off ([Updates](#updates)).
 > — the first launch takes two extra clicks. Both points are explained below
 > ([Requirements](#requirements), [Opening an unsigned app](#opening-an-unsigned-app)).
 
-## How it works
+> This first part is everything you need to run the app. Building it, its internals, and
+> the release process live in [Development](#development), further down.
+
+## What it does
 
 - **Save** a layout manually (button in the popover) when your displays are arranged
   the way you like. The arrangement is captured per _set of connected displays_ and
@@ -31,34 +34,33 @@ for a new release, which you can turn off ([Updates](#updates)).
 - Because saving is always manual, the broken layout macOS produces right after a
   reconnect can never overwrite your good saved layout.
 
-Under the hood it uses public CoreGraphics / Quartz Display Services APIs
-(`CGGetActiveDisplayList`, `CGDisplayBounds`, `CGConfigureDisplay*`,
-`CGCompleteDisplayConfiguration`) and identifies displays by their ColorSync UUID
-(`CGDisplayCreateUUIDFromDisplayID`) with a vendor/model/serial fallback. Connect and
-disconnect events are detected with `CGDisplayRegisterReconfigurationCallback`,
-debounced until the configuration settles. Rotation is the one thing CoreGraphics
-exposes read-only: it is written through the IOKit framebuffer transform
-(`IOServiceRequestProbe` with `kIOFBSetTransform`, the fb-rotate technique) and,
-because the transform resets the display mode, the previous mode is re-applied once
-the rotation settles.
-
 ## Requirements
 
 - macOS 26 or later
-- Xcode 26 (Swift 6.2) to build from source
 
 The macOS 26 floor comes from the UI layer (Liquid Glass panel chrome), not from the
 display logic, which uses long-standing CoreGraphics APIs. Lowering the deployment
 target hasn't been necessary so far, but support for earlier macOS versions may land
 in a future release. If you'd find it useful, open an issue — it helps gauge demand.
 
+## Install
+
+Download `DisplayAnchor-x.y.z.zip` from the
+[latest release](https://github.com/gabriarceus/DisplayAnchor/releases/latest), unzip it,
+and drag **DisplayAnchor.app** into `/Applications`. The first launch takes two extra
+clicks — see [Opening an unsigned app](#opening-an-unsigned-app) right below.
+
+The app has no Dock icon and no window: it lives in the menu bar, and everything happens
+in the panel that opens when you click its icon.
+
+Prefer not to run a downloaded binary? [Build it from source](#build-from-source) —
+locally built apps skip the Gatekeeper step entirely.
+
 ## Opening an unsigned app
 
 DisplayAnchor is **ad-hoc signed**, not signed with a paid Apple Developer ID, and it
 is not notarized. There's no developer account behind this project. Practically:
 
-- **Building from source** (below) is the smoothest path — locally built apps carry no
-  quarantine flag and just open.
 - **Downloading a release** puts macOS Gatekeeper in the way: the first launch is
   blocked with a "cannot be opened because Apple cannot check it for malicious
   software" message. To allow it, open **System Settings → Privacy & Security**,
@@ -71,38 +73,12 @@ is not notarized. There's no developer account behind this project. Practically:
   xattr -d com.apple.quarantine /Applications/DisplayAnchor.app
   ```
 
+- **Building from source** is the smoothest path — locally built apps carry no
+  quarantine flag and just open.
+
 This is the standard situation for any unsigned open-source macOS app. The source is
 right here — read it, or build it yourself, if you'd rather not take the binary on
 trust.
-
-## Build & install
-
-```bash
-git clone https://github.com/gabriarceus/DisplayAnchor.git
-cd DisplayAnchor
-./build.sh
-```
-
-`build.sh` asks whether to install to `/Applications` (replacing any existing
-copy); answer `n` to keep the app in `build/` and run it from there with
-`open "build/DisplayAnchor.app"`. In non-interactive runs (CI, piped)
-the question is skipped.
-
-The app is ad-hoc signed and runs as a menu-bar-only accessory app (no Dock icon).
-Notifications and launch-at-login only work from the built `.app` bundle, not under
-`swift run`.
-
-The UI foundation (panel, chrome, design tokens, reusable components) lives in the
-[`MenuBarKit`](https://github.com/gabriarceus/MenuBarKit) package, shared with the
-other menu bar apps; the panel chrome uses Liquid Glass. It is resolved from GitHub by
-default — if a `MenuBarKit` checkout sits next to this repo, that local copy is used
-instead so you can edit both at once. SwiftPM caches the evaluated manifest keyed by
-its contents, which don't change when the sibling appears or disappears — so after
-adding or removing it, run `swift package purge-cache && swift package reset` once
-(`reset` alone clears `.build` but not the shared manifest cache).
-
-> The app must remain **non-sandboxed** — writing display configuration is blocked under
-> the App Sandbox, so this cannot ship via the Mac App Store.
 
 ## Using it
 
@@ -151,6 +127,7 @@ Click the menu bar icon to open the popover:
 | Automatically restore on reconnect   | off     | Re-apply a matching saved layout when displays settle after a change (skipped when the arrangement already matches).                             |
 | Appearance                           | System  | Panel appearance: System, Dark, or Light                                                                                                         |
 | Tint                                 | None    | Glass tint mode: None, Match macOS (system accent), or Custom with a swatch row (Blue, Purple, Pink, Red, Orange, Yellow, Green, Graphite, Teal) |
+| Language                             | System  | UI language: _System_ follows macOS, or force English / Italian ([adding a language](#adding-a-language))                                        |
 | Notify when a layout is restored     | on      | Post a notification after an automatic restore.                                                                                                  |
 | Wait N seconds after displays change | 3       | How long to wait for the configuration to settle before restoring.                                                                               |
 | Launch at login                      | —       | Registers the app via `SMAppService` (built `.app` bundle only).                                                                                 |
@@ -181,33 +158,6 @@ the honest version of that.
 - Downloaded updates are quarantined by macOS like the first install — see
   [Opening an unsigned app](#opening-an-unsigned-app).
 
-### Cutting a release
-
-```bash
-# 1. bump CFBundleShortVersionString (and CFBundleVersion) in Info.plist, commit
-./release.sh
-```
-
-`release.sh` refuses to run on a dirty tree or an existing tag, builds the app, zips it
-with `ditto`, pushes, and creates the GitHub Release tagged `v<version>` — which is what
-existing installs then see.
-
-## Localization
-
-The app ships in **English** and **Italian**, and picks the language from the **Language** setting (Appearance section) — _System_ follows macOS, or force a specific one. All UI strings and notifications are localized.
-
-Adding a language needs **no code**:
-
-1. Duplicate the folder `Sources/DisplayAnchor/Resources/en.lproj` and rename the copy with your language code, e.g. `fr.lproj` (`de.lproj`, `es.lproj`, …).
-2. In the copied `Localizable.strings`, translate only the **right-hand** side of each line — keep the keys (left of `=`) unchanged:
-   ```
-   "common_settings" = "Réglages";
-   ```
-3. Keep the format specifiers (`%@`, `%d`, `%%`) intact; you may reorder them if the sentence needs it.
-4. Rebuild — the new language appears automatically in the Language picker (listed in its own name).
-
-The picker is populated from the bundled `.lproj` folders, so it grows on its own. Missing keys fall back to English. The `SectionLabel` fields render uppercase automatically, so write them in normal case.
-
 ## Known limitations
 
 1. **Same-model monitors** are distinguished by their ColorSync UUID, which is derived
@@ -220,13 +170,68 @@ The picker is populated from the bundled `.lproj` folders, so it grows on its ow
    CoreGraphics call. It works on standard configurations, but the display-to-service
    matching is EDID-based: two _byte-identical_ monitors resolve to the first match,
    so rotating one of two truly indistinguishable displays may rotate the other.
-3. **Not sandboxable** (see above), so no Mac App Store distribution.
+3. **Not sandboxable** ([why](#design-constraints)), so no Mac App Store distribution.
 4. **GPU switching** (e.g. eGPU connect/disconnect) can invalidate display UUIDs more
    aggressively; you may need to re-save the layout afterwards.
 5. If a monitor reports a different set of modes after reconnect, the closest matching
    resolution is applied.
 
-## Architecture
+---
+
+# Development
+
+Everything below is for building, modifying, or releasing the app. You don't need any
+of it to use DisplayAnchor.
+
+## Build from source
+
+Requires **Xcode 26 (Swift 6.2)** on macOS 26.
+
+```bash
+git clone https://github.com/gabriarceus/DisplayAnchor.git
+cd DisplayAnchor
+./build.sh
+```
+
+`build.sh` asks whether to install to `/Applications` (replacing any existing
+copy); answer `n` to keep the app in `build/` and run it from there with
+`open "build/DisplayAnchor.app"`. In non-interactive runs (CI, piped)
+the question is skipped.
+
+The app is ad-hoc signed and runs as a menu-bar-only accessory app (no Dock icon).
+Notifications and launch-at-login only work from the built `.app` bundle, not under
+`swift run`.
+
+The UI foundation (panel, chrome, design tokens, reusable components) lives in the
+[`MenuBarKit`](https://github.com/gabriarceus/MenuBarKit) package, shared with the
+other menu bar apps; the panel chrome uses Liquid Glass. It is resolved from GitHub by
+default — if a `MenuBarKit` checkout sits next to this repo, that local copy is used
+instead so you can edit both at once. SwiftPM caches the evaluated manifest keyed by
+its contents, which don't change when the sibling appears or disappears — so after
+adding or removing it, run `swift package purge-cache && swift package reset` once
+(`reset` alone clears `.build` but not the shared manifest cache).
+
+## Under the hood
+
+The app uses public CoreGraphics / Quartz Display Services APIs
+(`CGGetActiveDisplayList`, `CGDisplayBounds`, `CGConfigureDisplay*`,
+`CGCompleteDisplayConfiguration`) and identifies displays by their ColorSync UUID
+(`CGDisplayCreateUUIDFromDisplayID`) with a vendor/model/serial fallback. Connect and
+disconnect events are detected with `CGDisplayRegisterReconfigurationCallback`,
+debounced until the configuration settles. Rotation is the one thing CoreGraphics
+exposes read-only: it is written through the IOKit framebuffer transform
+(`IOServiceRequestProbe` with `kIOFBSetTransform`, the fb-rotate technique) and,
+because the transform resets the display mode, the previous mode is re-applied once
+the rotation settles.
+
+## Design constraints
+
+- The app must remain **non-sandboxed** — writing display configuration is blocked under
+  the App Sandbox, so this cannot ship via the Mac App Store.
+- It must keep working **without an Apple Developer ID**: ad-hoc signing is the baseline,
+  which is why updates are a link to a release rather than an in-app installer.
+
+## Project layout
 
 | File                                                      | Responsibility                                                                                                                                                                                                                  |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -239,6 +244,7 @@ The picker is populated from the bundled `.lproj` folders, so it grows on its ow
 | `LayoutEditing.swift`                                     | Pure editor helpers: draft model, snapping, overlap resolution                                                                                                                                                                  |
 | `ProfileStore.swift`                                      | JSON persistence of saved profiles                                                                                                                                                                                              |
 | `LayoutStore.swift`                                       | Save/restore policy, live edits (main/rotate/rearrange), published state                                                                                                                                                        |
+| `UpdateChecker.swift`                                     | Version parsing and the GitHub release poll behind [Updates](#updates)                                                                                                                                                          |
 | `Views/PanelRootView.swift`                               | Panel navigation between main view, settings, and editor; glass chrome + tint                                                                                                                                                   |
 | `Views/PopoverView.swift`                                 | Root popover                                                                                                                                                                                                                    |
 | `Views/DisplayMapView.swift`                              | Proportional mini-map with right-click quick actions                                                                                                                                                                            |
@@ -249,8 +255,33 @@ The picker is populated from the bundled `.lproj` folders, so it grows on its ow
 | `Views/SettingsView.swift`                                | Settings form + launch-at-login                                                                                                                                                                                                 |
 | `Views/DisplayCountIcon.swift`                            | Template icon of N rectangles for the display count                                                                                                                                                                             |
 | `Views/HoverTip.swift`                                    | Fast-appearing hover tooltip modifier                                                                                                                                                                                           |
-| `Resources/*.lproj`                                       | Per-language `Localizable.strings` tables (see [Localization](#localization))                                                                                                                                                   |
+| `Resources/*.lproj`                                       | Per-language `Localizable.strings` tables (see [Adding a language](#adding-a-language))                                                                                                                                         |
 | [`MenuBarKit`](https://github.com/gabriarceus/MenuBarKit) | Shared package: `MenuBarPanel`, Liquid Glass `PanelChrome` (optional tint), `PanelNavigation`, `Notifier`, `Localizer` + `Bundle.languageOptions`, `Theme` tokens, `PanelHeader`/`SectionLabel`/`GlassIconButton`/`inputChrome` |
+
+## Adding a language
+
+The app ships in **English** and **Italian**. Adding another needs **no code**:
+
+1. Duplicate the folder `Sources/DisplayAnchor/Resources/en.lproj` and rename the copy with your language code, e.g. `fr.lproj` (`de.lproj`, `es.lproj`, …).
+2. In the copied `Localizable.strings`, translate only the **right-hand** side of each line — keep the keys (left of `=`) unchanged:
+   ```
+   "common_settings" = "Réglages";
+   ```
+3. Keep the format specifiers (`%@`, `%d`, `%%`) intact; you may reorder them if the sentence needs it.
+4. Rebuild — the new language appears automatically in the Language picker (listed in its own name).
+
+The picker is populated from the bundled `.lproj` folders, so it grows on its own. Missing keys fall back to English. The `SectionLabel` fields render uppercase automatically, so write them in normal case.
+
+## Cutting a release
+
+```bash
+# 1. bump CFBundleShortVersionString (and CFBundleVersion) in Info.plist, commit
+./release.sh
+```
+
+`release.sh` refuses to run on a dirty tree or an existing tag, builds the app, zips it
+with `ditto`, pushes, and creates the GitHub Release tagged `v<version>` — which is what
+existing installs then see through the update check.
 
 ## License
 
