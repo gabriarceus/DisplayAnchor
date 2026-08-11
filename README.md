@@ -6,9 +6,10 @@ dock). It works around the well-known macOS bug where the relative positions of 
 monitors, the main-display designation, and per-display resolution get scrambled on
 replug.
 
-It does only this one thing. No window-position management, no accounts, no network,
+It does only this one thing. No window-position management, no accounts, no telemetry,
 no external dependencies — and it needs **no special permissions** (no Accessibility,
-no Screen Recording).
+no Screen Recording). The only thing it ever sends over the network is a daily check
+for a new release, which you can turn off ([Updates](#updates)).
 
 <p align="center">
   <img src="docs/screenshots/panel.png" alt="The DisplayAnchor panel: a mini-map of three displays, a badge confirming the arrangement matches the saved layout, and the list of saved layouts" width="360">
