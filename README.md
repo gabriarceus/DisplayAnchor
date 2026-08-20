@@ -37,6 +37,7 @@ for a new release, which you can turn off ([Updates](#updates)).
 ## Requirements
 
 - macOS 26 or later
+- Apple Silicon (`arm64`) or Intel (`x86_64`) — pre-built releases are Universal Binaries supporting both architectures natively.
 
 The macOS 26 floor comes from the UI layer (Liquid Glass panel chrome), not from the
 display logic, which uses long-standing CoreGraphics APIs. Lowering the deployment
@@ -282,6 +283,10 @@ The picker is populated from the bundled `.lproj` folders, so it grows on its ow
 `release.sh` refuses to run on a dirty tree or an existing tag, builds the app, zips it
 with `ditto`, pushes, and creates the GitHub Release tagged `v<version>` — which is what
 existing installs then see through the update check.
+
+Alternatively, you can push a tag directly (e.g. `git tag v1.0.1 && git push origin v1.0.1`)
+and the GitHub Actions workflow will automatically build the universal binary and publish
+the release.
 
 ## License
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.1] - 2026-08-20
 
+### Added
+
+- Universal 2 Binary build (`arm64` + `x86_64`) supporting both Apple Silicon and Intel Macs natively.
+- GitHub Actions CI/CD workflow to build and release universal binaries.
+
 ### Fixed
 
 - Fixed residual references to the old name "Display Layout" in the popover header and menu bar status item accessibility descriptions.
