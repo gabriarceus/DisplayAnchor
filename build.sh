@@ -5,19 +5,23 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-swift build -c release
+# Build a Universal Binary (arm64 + x86_64) for both Apple Silicon and Intel Macs
+swift build -c release --arch arm64 --arch x86_64
+BIN_DIR=$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)
 
 APP="build/DisplayAnchor.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
-cp .build/release/DisplayAnchor "$APP/Contents/MacOS/"
+cp "$BIN_DIR/DisplayAnchor" "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
 
 # SwiftPM resource bundles (localized .strings): Bundle.module resolves them
 # from Contents/Resources; without this copy it falls back to the absolute
 # .build path baked into the binary, reading the repo checkout at runtime.
 mkdir -p "$APP/Contents/Resources"
-cp -R .build/release/*.bundle "$APP/Contents/Resources/"
+if compgen -G "$BIN_DIR/*.bundle" > /dev/null; then
+	cp -R "$BIN_DIR"/*.bundle "$APP/Contents/Resources/"
+fi
 
 # App icon: derive AppIcon.icns from the 1024x1024 source PNG (when present)
 # and place it in Resources/. macOS resolves it via CFBundleIconFile in Info.plist.
