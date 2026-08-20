@@ -159,10 +159,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let image: NSImage?
         let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
         if store.justRestored {
-            image = NSImage(systemSymbolName: "checkmark.rectangle", accessibilityDescription: "Display Layout")?
+            image = NSImage(systemSymbolName: "checkmark.rectangle", accessibilityDescription: "DisplayAnchor")?
                 .withSymbolConfiguration(configuration)
         } else if store.matchState == .differs {
-            image = NSImage(systemSymbolName: "display.trianglebadge.exclamationmark", accessibilityDescription: "Display Layout")?
+            image = NSImage(systemSymbolName: "display.trianglebadge.exclamationmark", accessibilityDescription: "DisplayAnchor")?
                 .withSymbolConfiguration(configuration)
         } else {
             // Steady state: rectangles mirroring the connected displays (main filled).

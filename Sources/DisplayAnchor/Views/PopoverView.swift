@@ -82,7 +82,7 @@ struct PopoverView: View {
     }
 
     private var header: some View {
-        PanelHeader(title: "Display Layout", leading: {
+        PanelHeader(title: "DisplayAnchor", leading: {
             Image(nsImage: DisplayCountIcon.image(displays: store.currentDisplays))
                 .renderingMode(.template)
         })
