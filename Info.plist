@@ -26,5 +26,19 @@
 	<string>26.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<!-- Sparkle. The feed is the appcast.xml asset of the newest release, so the
+	     URL stays valid without a separate host. SUPublicEDKey is the public half
+	     of the EdDSA pair from `.build/artifacts/sparkle/Sparkle/bin/generate_keys`;
+	     an ad-hoc signed app cannot rotate it, so it is fixed once published. -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/gabriarceus/DisplayAnchor/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string></string>
+	<!-- Set explicitly so Sparkle never asks on its own: the app has its own
+	     "Check for updates automatically" toggle, which writes through to it. -->
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>21600</integer>
 </dict>
 </plist>

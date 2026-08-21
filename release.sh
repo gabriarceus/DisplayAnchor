@@ -11,11 +11,25 @@ command -v gh >/dev/null || { echo "gh (GitHub CLI) is required." >&2; exit 1; }
 
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
 TAG="v$VERSION"
+REPOSITORY="gabriarceus/DisplayAnchor"
 
 [[ -z "$(git status --porcelain)" ]] || { echo "Working tree not clean." >&2; exit 1; }
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
 	echo "Tag $TAG already exists — bump CFBundleShortVersionString in Info.plist." >&2
 	exit 1
+fi
+
+# Sparkle compares CFBundleVersion, not the marketing version, so a release that
+# leaves it untouched is invisible to every existing install. Caught here rather
+# than after publishing.
+BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Info.plist)
+LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+if [[ -n "$LAST_TAG" && "$BUILD" =~ ^[0-9]+$ ]]; then
+	PREV_BUILD=$(git show "$LAST_TAG:Info.plist" 2>/dev/null | plutil -extract CFBundleVersion raw -o - -- - 2>/dev/null || echo 0)
+	if [[ "$PREV_BUILD" =~ ^[0-9]+$ ]] && ((BUILD <= PREV_BUILD)); then
+		echo "CFBundleVersion is $BUILD, but $LAST_TAG already published $PREV_BUILD — bump it in Info.plist." >&2
+		exit 1
+	fi
 fi
 
 ./build.sh </dev/null
@@ -25,9 +39,24 @@ rm -f "$ZIP"
 # ditto (not zip) preserves the bundle's symlinks and resource forks.
 ditto -c -k --keepParent "build/DisplayAnchor.app" "$ZIP"
 
-# Push first: gh creates the tag at the remote HEAD, and the update check starts
+# Sparkle reads the appcast, not the GitHub API, so the release is only visible to
+# existing installs once a signed feed is attached to it. The EdDSA key comes from
+# the Keychain (see generate_keys); an unsigned enclosure is rejected on install.
+GENERATE_APPCAST=$(find .build/artifacts -type f -name generate_appcast | head -1)
+[[ -n "$GENERATE_APPCAST" ]] || { echo "generate_appcast not found — run 'swift package resolve'." >&2; exit 1; }
+APPCAST_DIR="build/appcast"
+rm -rf "$APPCAST_DIR"
+mkdir -p "$APPCAST_DIR"
+cp "$ZIP" "$APPCAST_DIR/"
+"$GENERATE_APPCAST" \
+	--download-url-prefix "https://github.com/$REPOSITORY/releases/download/$TAG/" \
+	--link "https://github.com/$REPOSITORY" \
+	-o "$APPCAST_DIR/appcast.xml" \
+	"$APPCAST_DIR"
+
+# Push first: gh creates the tag at the remote HEAD, and the update feed starts
 # advertising this version the moment the release is published.
 git push origin HEAD
-gh release create "$TAG" "$ZIP" --title "$VERSION" --generate-notes
+gh release create "$TAG" "$ZIP" "$APPCAST_DIR/appcast.xml" --title "$VERSION" --generate-notes
 
 echo "Published $TAG"

@@ -5,8 +5,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# Build a Universal Binary (arm64 + x86_64) for both Apple Silicon and Intel Macs
-swift build -c release --arch arm64 --arch x86_64
+# Build a Universal Binary (arm64 + x86_64) for both Apple Silicon and Intel Macs.
+# The rpath is what lets the executable find the embedded Sparkle.framework;
+# Xcode adds it implicitly, a raw `swift build` does not.
+swift build -c release --arch arm64 --arch x86_64 \
+	-Xlinker -rpath -Xlinker @executable_path/../Frameworks
 BIN_DIR=$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)
 
 APP="build/DisplayAnchor.app"
@@ -47,7 +50,20 @@ else
 	echo "WARNING: $ICON_SRC not found — building without an app icon."
 fi
 
+# Sparkle is a binary framework: SwiftPM stages it next to the executable but
+# embedding it in the bundle is on us. ditto (not cp) keeps its symlinks, its
+# nested Autoupdate/Updater.app bundles and their signatures intact — Sparkle
+# refuses to install an update if its own helpers fail validation.
+SPARKLE_FW="$BIN_DIR/Sparkle.framework"
+[[ -d "$SPARKLE_FW" ]] || { echo "Sparkle.framework missing from $BIN_DIR." >&2; exit 1; }
+mkdir -p "$APP/Contents/Frameworks"
+ditto "$SPARKLE_FW" "$APP/Contents/Frameworks/Sparkle.framework"
+echo "Embedded Sparkle.framework"
+
+# Signing the outer bundle last seals the framework into its CodeResources. The
+# framework arrives ad-hoc signed already, so no nested re-signing is needed.
 codesign --force --sign - "$APP"
+codesign --verify --deep --strict "$APP"
 
 echo "Built $APP"
 echo "Run it with: open \"$APP\""

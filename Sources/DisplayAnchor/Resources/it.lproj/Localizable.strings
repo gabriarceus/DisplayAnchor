@@ -36,8 +36,7 @@
 "updates_up_to_date" = "Già aggiornata";
 "updates_check_failed" = "Controllo non riuscito";
 "updates_available" = "Versione %@ disponibile";
-"updates_download" = "Scarica %@";
-"updates_gatekeeper_hint" = "DisplayAnchor non è notarizzata: la prima volta che apri l’app scaricata, fai clic destro e scegli Apri.";
+"updates_install" = "Installa %@";
 
 /* Popover */
 "popover_no_displays" = "Nessuno schermo rilevato.";
@@ -97,4 +96,4 @@
 "notification_unmatched_body" = "Gli schermi collegati non corrispondono al layout salvato “%@”.";
 "notification_rejected_body" = "macOS ha rifiutato il layout salvato “%@”.";
 "notification_update_title" = "Aggiornamento disponibile";
-"notification_update_body" = "DisplayAnchor %@ è disponibile. Apri DisplayAnchor per scaricarlo.";
+"notification_update_body" = "DisplayAnchor %@ è disponibile. Apri DisplayAnchor per installarlo.";

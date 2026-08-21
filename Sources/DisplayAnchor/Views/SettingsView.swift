@@ -10,7 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var config: AppConfig
     @ObservedObject var notifier: Notifier
-    @ObservedObject var updates: UpdateChecker
+    @ObservedObject var updates: UpdateController
     let onBack: () -> Void
 
     @Environment(\.localizer) private var l
@@ -48,8 +48,8 @@ struct SettingsView: View {
         .onChange(of: config.notifyOnRestore) { _, enabled in
             if enabled { notifier.requestAuthorizationIfNeeded() }
         }
-        .onChange(of: config.checkForUpdates) { _, _ in
-            updates.checkIfDue()
+        .onChange(of: config.checkForUpdates) { _, enabled in
+            updates.setAutomaticChecks(enabled)
         }
         .onChange(of: config.settleSeconds) { _, value in
             // The text field accepts any number; clamp typed values to the range.
@@ -241,15 +241,10 @@ struct SettingsView: View {
             updateStatusLabel
         }
 
-        if let update = updates.availableUpdate {
-            Button(l("updates_download", update.version)) {
-                NSWorkspace.shared.open(update.pageURL)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-            Text(l("updates_gatekeeper_hint"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        if let version = updates.availableVersion {
+            Button(l("updates_install", version)) { updates.install() }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
         }
     }
 
@@ -261,9 +256,9 @@ struct SettingsView: View {
             Text("\(l("updates_current_version")) \(updates.currentVersion)")
                 .monospacedDigit()
             Spacer()
-            Link(destination: UpdateChecker.repositoryURL) {
+            Link(destination: UpdateController.repositoryURL) {
                 HStack(spacing: 2) {
-                    Text(UpdateChecker.repository)
+                    Text(UpdateController.repository)
                     Image(systemName: "arrow.up.right")
                 }
             }
@@ -285,8 +280,8 @@ struct SettingsView: View {
             Text(l("updates_up_to_date"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-        case .available(let update):
-            Text(l("updates_available", update.version))
+        case .available(let version):
+            Text(l("updates_available", version))
                 .font(.caption)
                 .foregroundStyle(.orange)
         case .failed:

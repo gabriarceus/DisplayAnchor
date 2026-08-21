@@ -17,6 +17,6 @@ enum Log {
     static let monitor = Logger(subsystem: subsystem, category: "monitor")
     /// Status item and popover presentation.
     static let ui = Logger(subsystem: subsystem, category: "ui")
-    /// GitHub release polling for new versions.
+    /// Update feed checks and installation.
     static let updates = Logger(subsystem: subsystem, category: "updates")
 }

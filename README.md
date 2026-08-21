@@ -6,10 +6,10 @@ dock). It works around the well-known macOS bug where the relative positions of 
 monitors, the main-display designation, and per-display resolution get scrambled on
 replug.
 
-It does only this one thing. No window-position management, no accounts, no telemetry,
-no external dependencies — and it needs **no special permissions** (no Accessibility,
-no Screen Recording). The only thing it ever sends over the network is a daily check
-for a new release, which you can turn off ([Updates](#updates)).
+It does only this one thing. No window-position management, no accounts, no telemetry
+— and it needs **no special permissions** (no Accessibility, no Screen Recording). The
+only thing it ever sends over the network is a check for a new release, which you can
+turn off ([Updates](#updates)).
 
 <p align="center">
   <img src="docs/screenshots/panel.png" alt="The DisplayAnchor panel: a mini-map of three displays, a badge confirming the arrangement matches the saved layout, and the list of saved layouts" width="360">
@@ -77,6 +77,10 @@ is not notarized. There's no developer account behind this project. Practically:
 - **Building from source** is the smoothest path — locally built apps carry no
   quarantine flag and just open.
 
+Only the first install goes through this. From then on DisplayAnchor updates itself
+through Sparkle, which removes the quarantine flag from the bundle it installs, so later
+versions launch without the approval step ([Updates](#updates)).
+
 This is the standard situation for any unsigned open-source macOS app. The source is
 right here — read it, or build it yourself, if you'd rather not take the binary on
 trust.
@@ -132,7 +136,7 @@ Click the menu bar icon to open the popover:
 | Notify when a layout is restored     | on      | Post a notification after an automatic restore.                                                                                                  |
 | Wait N seconds after displays change | 3       | How long to wait for the configuration to settle before restoring.                                                                               |
 | Launch at login                      | —       | Registers the app via `SMAppService` (built `.app` bundle only).                                                                                 |
-| Check for updates automatically      | on      | Look for a newer GitHub release in the background and notify you once per version. See [Updates](#updates).                                      |
+| Check for updates automatically      | on      | Let Sparkle poll the update feed in the background and notify you once per version. See [Updates](#updates).                                     |
 
 Saved layouts are stored at
 `~/Library/Application Support/DisplayAnchor/profiles.json`
@@ -141,26 +145,31 @@ UserDefaults under `io.github.gabriarceus.DisplayAnchor`.
 
 ## Updates
 
-DisplayAnchor checks whether a newer version has been released — it does not download
-or install anything. With no Developer ID signature, a real in-app installer would have
-to strip quarantine and swap the running bundle itself; a link to the release page is
-the honest version of that.
+DisplayAnchor updates itself through [Sparkle](https://github.com/sparkle-project/Sparkle):
+it reads a signed feed and installs a new version from inside the app, with no manual
+download.
 
 - **Where it shows up**: when an update exists you get a notification (once per
   version), a dot next to the menu bar icon, an orange dot on the settings gear in the
-  main panel, and a **Download** button in Settings → Updates. The running version sits
+  main panel, and an **Install** button in Settings → Updates. The running version sits
   in the footer at the bottom of Settings.
-- **How it works**: an unauthenticated `GET` to
-  `api.github.com/repos/gabriarceus/DisplayAnchor/releases/latest`, whose `tag_name`
-  is compared against `CFBundleShortVersionString`. The check runs at most once every
-  24 hours; that gate is re-evaluated at launch, every 6 hours, on wake from sleep, and
-  when the panel is opened. A found update is remembered across launches, so it stays
-  visible while the gate holds off the next check. Network failures and rate limiting
-  are silent — only a manual check reports them.
-- **Turning it off**: the automatic-check toggle. Nothing is sent to GitHub beyond the
+- **How it works**: Sparkle polls `appcast.xml`, published as an asset of the newest
+  release, and compares its `sparkle:version` against the running bundle's
+  `CFBundleVersion`. A background check runs at launch and every 6 hours, and never
+  opens a window of its own — the dot and the notification are the whole reminder
+  (Sparkle calls this "gentle reminders"). Its standard flow — release notes, download,
+  install, relaunch — appears only when you press **Install**.
+- **What is verified**: every update carries an EdDSA (ed25519) signature, checked
+  against the public key baked into the app. This is what makes in-app updates possible
+  with no Apple Developer ID: Sparkle accepts an update on a valid EdDSA signature
+  alone and does not require a code-signing identity to match.
+- **Gatekeeper**: Sparkle strips the `com.apple.quarantine` flag from the bundle it
+  installs, and macOS gates the first-launch approval prompt on that flag — so an update
+  installed from inside the app does not ask you to approve it again. That approval is
+  still needed once, for the very first install from a downloaded zip (see
+  [Opening an unsigned app](#opening-an-unsigned-app)).
+- **Turning it off**: the automatic-check toggle. Nothing is sent beyond the feed
   request itself: no identifier, no telemetry, no account.
-- Downloaded updates are quarantined by macOS like the first install — see
-  [Opening an unsigned app](#opening-an-unsigned-app).
 
 ## Known limitations
 
@@ -203,8 +212,14 @@ copy); answer `n` to keep the app in `build/` and run it from there with
 the question is skipped.
 
 The app is ad-hoc signed and runs as a menu-bar-only accessory app (no Dock icon).
-Notifications and launch-at-login only work from the built `.app` bundle, not under
-`swift run`.
+Notifications, launch-at-login and the updater only work from the built `.app` bundle,
+not under `swift run`.
+
+`build.sh` also embeds `Sparkle.framework` into `Contents/Frameworks` and links the
+executable with an `@executable_path/../Frameworks` rpath — a plain `swift build`
+provides neither, so the app would crash on launch without it. It then verifies the
+bundle's signature: Sparkle rejects an update whose own signature does not verify, so a
+broken ad-hoc signature would ship a version that can never update itself.
 
 The UI foundation (panel, chrome, design tokens, reusable components) lives in the
 [`MenuBarKit`](https://github.com/gabriarceus/MenuBarKit) package, shared with the
@@ -232,8 +247,9 @@ the rotation settles.
 
 - The app must remain **non-sandboxed** — writing display configuration is blocked under
   the App Sandbox, so this cannot ship via the Mac App Store.
-- It must keep working **without an Apple Developer ID**: ad-hoc signing is the baseline,
-  which is why updates are a link to a release rather than an in-app installer.
+- It must keep working **without an Apple Developer ID**: ad-hoc signing is the baseline.
+  In-app updates are still possible because Sparkle validates them with its own EdDSA
+  signature rather than with a code-signing identity — see [Updates](#updates).
 
 ## Project layout
 
@@ -248,7 +264,7 @@ the rotation settles.
 | `LayoutEditing.swift`                                     | Pure editor helpers: draft model, snapping, overlap resolution                                                                                                                                                                  |
 | `ProfileStore.swift`                                      | JSON persistence of saved profiles                                                                                                                                                                                              |
 | `LayoutStore.swift`                                       | Save/restore policy, live edits (main/rotate/rearrange), published state                                                                                                                                                        |
-| `UpdateChecker.swift`                                     | Version parsing and the GitHub release poll behind [Updates](#updates)                                                                                                                                                          |
+| `UpdateController.swift`                                  | Sparkle wiring behind [Updates](#updates): silent feed check, own affordances, install hand-off                                                                                                                                  |
 | `Views/PanelRootView.swift`                               | Panel navigation between main view, settings, and editor; glass chrome + tint                                                                                                                                                   |
 | `Views/PopoverView.swift`                                 | Root popover                                                                                                                                                                                                                    |
 | `Views/DisplayMapView.swift`                              | Proportional mini-map with right-click quick actions                                                                                                                                                                            |
@@ -260,6 +276,7 @@ the rotation settles.
 | `Views/DisplayCountIcon.swift`                            | Template icon of N rectangles for the display count                                                                                                                                                                             |
 | `Views/HoverTip.swift`                                    | Fast-appearing hover tooltip modifier                                                                                                                                                                                           |
 | `Resources/*.lproj`                                       | Per-language `Localizable.strings` tables (see [Adding a language](#adding-a-language))                                                                                                                                         |
+| [`Sparkle`](https://github.com/sparkle-project/Sparkle)   | Update framework: appcast feed, EdDSA validation, download/install/relaunch. Embedded into the bundle by `build.sh`                                                                                                              |
 | [`MenuBarKit`](https://github.com/gabriarceus/MenuBarKit) | Shared package: `MenuBarPanel`, Liquid Glass `PanelChrome` (optional tint), `PanelNavigation`, `Notifier`, `Localizer` + `Bundle.languageOptions`, `Theme` tokens, `PanelHeader`/`SectionLabel`/`GlassIconButton`/`inputChrome` |
 
 ## Adding a language
@@ -284,12 +301,73 @@ The picker is populated from the bundled `.lproj` folders, so it grows on its ow
 ```
 
 `release.sh` refuses to run on a dirty tree or an existing tag, builds the app, zips it
-with `ditto`, pushes, and creates the GitHub Release tagged `v<version>` — which is what
-existing installs then see through the update check.
+with `ditto`, generates the **signed appcast**, pushes, and creates the GitHub Release
+tagged `v<version>` with both the zip and `appcast.xml` attached — which is what existing
+installs then see through the update feed.
+
+> [!IMPORTANT]
+> Bump **`CFBundleVersion`** too, not just `CFBundleShortVersionString`. Sparkle compares
+> `CFBundleVersion`, so a release that leaves it untouched is invisible to existing
+> installs no matter what the tag says.
+
+Signing the appcast locally uses the EdDSA private key in your Keychain. Attaching an
+unsigned or missing `appcast.xml` means existing installs never see the release, so both
+paths fail loudly rather than publishing a release nobody can update to.
 
 Alternatively, you can push a tag directly (e.g. `git tag v1.0.1 && git push origin v1.0.1`)
-and the GitHub Actions workflow will automatically build the universal binary and publish
-the release.
+and the GitHub Actions workflow will automatically build the universal binary, sign the
+appcast and publish the release. The workflow reads the private key from the
+`SPARKLE_PRIVATE_KEY` repository secret.
+
+Running `release.sh` twice for the same version can emit a wrong `sparkle:version` from a
+stale cache; clear it with `rm -rf ~/Library/Caches/Sparkle_generate_appcast` first. CI
+runners start clean, so this only affects local runs.
+
+## Update signing keys
+
+Publishing needs an EdDSA (ed25519) key pair, generated once:
+
+```bash
+swift package resolve
+.build/artifacts/sparkle/Sparkle/bin/generate_keys
+```
+
+The private key lands in your login Keychain and the tool prints the public half — put
+that in `Info.plist` under `SUPublicEDKey`. `release.sh` signs the appcast straight from
+the Keychain. For CI, export the key and store it as a repository secret:
+
+```bash
+.build/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle-private-key.txt
+gh secret set SPARKLE_PRIVATE_KEY < sparkle-private-key.txt
+rm sparkle-private-key.txt
+```
+
+> [!WARNING]
+> **The key cannot be rotated.** Sparkle only accepts a new key when the transition is
+> signed with a code-signing identity carrying a Team ID, which an ad-hoc signed app does
+> not have. Generate it once, back it up, and keep it — losing it means existing installs
+> can never be updated again.
+
+## Finishing the update setup
+
+The Sparkle integration is in place but not yet operable: `SUPublicEDKey` in `Info.plist`
+is empty, so `SPUUpdater.start()` fails, the failure is logged, and the app runs exactly
+as it did before — without in-app updates. What is left:
+
+- [ ] Generate the EdDSA key pair on a machine you trust and put the public half in
+      `SUPublicEDKey` (see [Update signing keys](#update-signing-keys)).
+- [ ] Export the private key and store it as the `SPARKLE_PRIVATE_KEY` repository secret,
+      so the workflow can sign the appcast.
+- [ ] Bump both `CFBundleShortVersionString` and `CFBundleVersion`, then cut a release and
+      confirm `appcast.xml` is attached to it.
+- [ ] Verify the update end to end from an older build: feed read, EdDSA validation,
+      install, relaunch. None of that path can be exercised before a signed release
+      exists.
+- [ ] Re-take `docs/screenshots/settings.png` — it still shows the version row inside
+      Updates and the old **Download** button.
+
+The first release carrying Sparkle only reaches people who install it by hand: installs
+running an earlier version have no updater, so that one upgrade stays manual for everyone.
 
 ## License
 

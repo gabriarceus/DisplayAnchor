@@ -36,8 +36,7 @@
 "updates_up_to_date" = "Up to date";
 "updates_check_failed" = "Check failed";
 "updates_available" = "Version %@ available";
-"updates_download" = "Download %@";
-"updates_gatekeeper_hint" = "DisplayAnchor isn't notarized: the first time you open the downloaded app, right-click it and choose Open.";
+"updates_install" = "Install %@";
 
 /* Popover */
 "popover_no_displays" = "No displays detected.";
@@ -97,4 +96,4 @@
 "notification_unmatched_body" = "Connected displays didn't match the saved “%@” layout.";
 "notification_rejected_body" = "macOS rejected the saved “%@” layout.";
 "notification_update_title" = "Update available";
-"notification_update_body" = "DisplayAnchor %@ is available. Open DisplayAnchor to download it.";
+"notification_update_body" = "DisplayAnchor %@ is available. Open DisplayAnchor to install it.";

@@ -16,12 +16,18 @@ let package = Package(
     dependencies: [
         useLocalMenuBarKit
             ? .package(path: "../MenuBarKit")
-            : .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.0.0")
+            : .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.0.0"),
+        // Binary XCFramework: `build.sh` embeds it into the bundle, since a
+        // hand-assembled .app gets none of Xcode's copy-frameworks phase.
+        .package(url: "https://github.com/sparkle-project/Sparkle.git", from: "2.9.0"),
     ],
     targets: [
         .executableTarget(
             name: "DisplayAnchor",
-            dependencies: ["MenuBarKit"],
+            dependencies: [
+                "MenuBarKit",
+                .product(name: "Sparkle", package: "Sparkle"),
+            ],
             resources: [.process("Resources")]
         )
     ]

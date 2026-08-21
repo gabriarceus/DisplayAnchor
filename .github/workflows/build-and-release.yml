@@ -43,6 +43,7 @@ jobs:
           ditto -c -k --keepParent "build/DisplayAnchor.app" "build/${ZIP_NAME}"
           cp "build/${ZIP_NAME}" "build/DisplayAnchor.zip"
           echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
+          echo "TAG=v${VERSION}" >> "$GITHUB_ENV"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -51,9 +52,34 @@ jobs:
           path: build/DisplayAnchor.zip
           if-no-files-found: error
 
+      # Sparkle reads this feed, not the GitHub API: the enclosure has to carry an
+      # EdDSA signature, and the download URL has to point at this release's asset.
+      - name: Generate signed appcast
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          [[ -n "$SPARKLE_PRIVATE_KEY" ]] || { echo "SPARKLE_PRIVATE_KEY secret is not set — existing installs would never see this release." >&2; exit 1; }
+          GENERATE_APPCAST=$(find .build/artifacts -type f -name generate_appcast | head -1)
+          [[ -n "$GENERATE_APPCAST" ]] || { echo "generate_appcast not found — did the Sparkle dependency resolve?" >&2; exit 1; }
+          mkdir -p appcast
+          cp "build/${ZIP_NAME}" appcast/
+          echo "$SPARKLE_PRIVATE_KEY" | "$GENERATE_APPCAST" \
+            --ed-key-file - \
+            --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${TAG}/" \
+            --link "https://github.com/${{ github.repository }}" \
+            -o appcast/appcast.xml \
+            appcast/
+          cat appcast/appcast.xml
+
       - name: Create / Update GitHub Release
         if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          files: build/${{ env.ZIP_NAME }}
+          # Derived from Info.plist rather than the ref, so a manual dispatch tags
+          # the same version the appcast's download URL points at.
+          tag_name: ${{ env.TAG }}
+          files: |
+            build/${{ env.ZIP_NAME }}
+            appcast/appcast.xml
           generate_release_notes: true

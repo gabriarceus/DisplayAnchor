@@ -7,7 +7,7 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let config = AppConfig()
-    private lazy var updateChecker = UpdateChecker(config: config)
+    private lazy var updates = UpdateController(config: config)
     private var store: LayoutStore?
     private var statusItem: NSStatusItem?
     private var panel: MenuBarPanel?
@@ -32,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 store: store,
                 config: config,
                 navigation: navigation,
-                updateChecker: updateChecker
+                updates: updates
             ),
             width: PopoverView.popoverWidth
         )
@@ -52,26 +52,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appearanceObserver = config.$appAppearanceRaw
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applyPanelAppearance() }
-        updateObserver = updateChecker.$status
+        updateObserver = updates.$status
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] (_: UpdateController.Status) in
                 self?.renderStatusItem()
                 self?.announceAvailableUpdate()
             }
         applyPanelAppearance()
         store.start()
         renderStatusItem()
-        updateChecker.start()
+        updates.start()
     }
 
     /// Notifies the user about a pending update, once per version. The panel is
     /// the only place the update is otherwise visible, and it is closed most of
     /// the time, so a background find would go unnoticed.
     private func announceAvailableUpdate() {
-        guard config.checkForUpdates, let update = updateChecker.consumeUnannouncedUpdate() else { return }
+        guard config.checkForUpdates, let version = updates.consumeUnannouncedUpdate() else { return }
         store?.notifier.send(
             title: config.l("notification_update_title"),
-            body: config.l("notification_update_body", update.version)
+            body: config.l("notification_update_body", version)
         )
     }
 
@@ -130,10 +130,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let last = lastPanelDismiss, Date().timeIntervalSince(last) < 0.2 { return }
 
         store?.refreshCurrentState()
-        // Opening the panel is the moment the update state is read, so re-check
-        // here too; the daily gate makes this a no-op on all but the first open
-        // of the day.
-        updateChecker.checkIfDue()
         // Present on the next runloop tick: the status-bar button runs a mouse
         // tracking loop on click, and presenting mid-tracking prevents the panel
         // from appearing.
@@ -191,7 +187,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // A failed symbol lookup must never leave the menu bar blank.
         var resolved = image ?? DisplayCountIcon.image(displays: store.currentDisplays)
-        if updateChecker.availableUpdate != nil {
+        if updates.availableVersion != nil {
             resolved = resolved.withNotificationDot()
         }
         resolved.isTemplate = true
