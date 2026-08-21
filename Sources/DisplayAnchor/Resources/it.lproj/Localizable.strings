@@ -96,3 +96,5 @@
 "notification_restore_failed_title" = "Impossibile ripristinare il layout";
 "notification_unmatched_body" = "Gli schermi collegati non corrispondono al layout salvato “%@”.";
 "notification_rejected_body" = "macOS ha rifiutato il layout salvato “%@”.";
+"notification_update_title" = "Aggiornamento disponibile";
+"notification_update_body" = "DisplayAnchor %@ è disponibile. Apri DisplayAnchor per scaricarlo.";

@@ -132,7 +132,7 @@ Click the menu bar icon to open the popover:
 | Notify when a layout is restored     | on      | Post a notification after an automatic restore.                                                                                                  |
 | Wait N seconds after displays change | 3       | How long to wait for the configuration to settle before restoring.                                                                               |
 | Launch at login                      | —       | Registers the app via `SMAppService` (built `.app` bundle only).                                                                                 |
-| Check for updates automatically      | on      | Once a day, look for a newer GitHub release. See [Updates](#updates).                                                                            |
+| Check for updates automatically      | on      | Look for a newer GitHub release in the background and notify you once per version. See [Updates](#updates).                                      |
 
 Saved layouts are stored at
 `~/Library/Application Support/DisplayAnchor/profiles.json`
@@ -146,14 +146,17 @@ or install anything. With no Developer ID signature, a real in-app installer wou
 to strip quarantine and swap the running bundle itself; a link to the release page is
 the honest version of that.
 
-- **Where it shows up**: Settings → Updates lists the running version, the automatic
-  check toggle, and a **Check Now** button. When an update exists, the settings gear in
-  the main panel gets an orange dot and a **Download** button appears in Settings.
+- **Where it shows up**: when an update exists you get a notification (once per
+  version), a dot next to the menu bar icon, an orange dot on the settings gear in the
+  main panel, and a **Download** button in Settings → Updates. The running version sits
+  in the footer at the bottom of Settings.
 - **How it works**: an unauthenticated `GET` to
   `api.github.com/repos/gabriarceus/DisplayAnchor/releases/latest`, whose `tag_name`
-  is compared against `CFBundleShortVersionString`. The background check runs at most
-  once every 24 hours (at launch and when the panel is opened); network failures and
-  rate limiting are silent — only a manual check reports them.
+  is compared against `CFBundleShortVersionString`. The check runs at most once every
+  24 hours; that gate is re-evaluated at launch, every 6 hours, on wake from sleep, and
+  when the panel is opened. A found update is remembered across launches, so it stays
+  visible while the gate holds off the next check. Network failures and rate limiting
+  are silent — only a manual check reports them.
 - **Turning it off**: the automatic-check toggle. Nothing is sent to GitHub beyond the
   request itself: no identifier, no telemetry, no account.
 - Downloaded updates are quarantined by macOS like the first install — see

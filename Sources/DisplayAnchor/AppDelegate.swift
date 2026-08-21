@@ -7,13 +7,14 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let config = AppConfig()
-    private let updateChecker = UpdateChecker()
+    private lazy var updateChecker = UpdateChecker(config: config)
     private var store: LayoutStore?
     private var statusItem: NSStatusItem?
     private var panel: MenuBarPanel?
     private var lastPanelDismiss: Date?
     private let navigation = PanelNavigation<PanelScreen>(initial: .main)
     private var appearanceObserver: AnyCancellable?
+    private var updateObserver: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMainMenu()
@@ -51,10 +52,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appearanceObserver = config.$appAppearanceRaw
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applyPanelAppearance() }
+        updateObserver = updateChecker.$status
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.renderStatusItem()
+                self?.announceAvailableUpdate()
+            }
         applyPanelAppearance()
         store.start()
         renderStatusItem()
-        updateChecker.checkIfDue(enabled: config.checkForUpdates)
+        updateChecker.start()
+    }
+
+    /// Notifies the user about a pending update, once per version. The panel is
+    /// the only place the update is otherwise visible, and it is closed most of
+    /// the time, so a background find would go unnoticed.
+    private func announceAvailableUpdate() {
+        guard config.checkForUpdates, let update = updateChecker.consumeUnannouncedUpdate() else { return }
+        store?.notifier.send(
+            title: config.l("notification_update_title"),
+            body: config.l("notification_update_body", update.version)
+        )
     }
 
     /// Forces the panel's appearance for the dark/light settings; system follows
@@ -112,9 +130,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let last = lastPanelDismiss, Date().timeIntervalSince(last) < 0.2 { return }
 
         store?.refreshCurrentState()
-        // Sessions run for weeks, so the launch-time check alone would go stale;
-        // the daily gate makes this a no-op on all but the first open of the day.
-        updateChecker.checkIfDue(enabled: config.checkForUpdates)
+        // Opening the panel is the moment the update state is read, so re-check
+        // here too; the daily gate makes this a no-op on all but the first open
+        // of the day.
+        updateChecker.checkIfDue()
         // Present on the next runloop tick: the status-bar button runs a mouse
         // tracking loop on click, and presenting mid-tracking prevents the panel
         // from appearing.
@@ -152,7 +171,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// the menu bar), and state is conveyed by the symbol shape rather than a tint —
     /// a tinted/non-template image can render invisible after a display
     /// reconfiguration. An explicit symbol configuration keeps it crisp across
-    /// displays with different backing scales.
+    /// displays with different backing scales. A pending update adds a dot in the
+    /// corner, for the same reason drawn in the template's own color.
     private func renderStatusItem() {
         guard let button = statusItem?.button, let store else { return }
 
@@ -170,10 +190,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // A failed symbol lookup must never leave the menu bar blank.
-        let resolved = image ?? DisplayCountIcon.image(displays: store.currentDisplays)
+        var resolved = image ?? DisplayCountIcon.image(displays: store.currentDisplays)
+        if updateChecker.availableUpdate != nil {
+            resolved = resolved.withNotificationDot()
+        }
         resolved.isTemplate = true
         button.image = resolved
         button.contentTintColor = nil
         button.imagePosition = .imageOnly
+    }
+}
+
+private extension NSImage {
+    /// Copy of the image with a small filled dot in the top-trailing corner, as a
+    /// template so the menu bar tints dot and icon alike. The canvas grows to the
+    /// right to fit the dot instead of drawing it over the icon.
+    func withNotificationDot(diameter: CGFloat = 4, gap: CGFloat = 1.5) -> NSImage {
+        let canvas = NSSize(width: size.width + gap + diameter, height: size.height)
+        let badged = NSImage(size: canvas, flipped: false) { _ in
+            self.draw(in: NSRect(origin: .zero, size: self.size))
+            let dot = NSRect(
+                x: canvas.width - diameter,
+                y: canvas.height - diameter,
+                width: diameter,
+                height: diameter
+            )
+            NSColor.black.setFill()
+            NSBezierPath(ovalIn: dot).fill()
+            return true
+        }
+        badged.isTemplate = true
+        return badged
     }
 }

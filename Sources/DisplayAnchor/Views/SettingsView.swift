@@ -48,8 +48,8 @@ struct SettingsView: View {
         .onChange(of: config.notifyOnRestore) { _, enabled in
             if enabled { notifier.requestAuthorizationIfNeeded() }
         }
-        .onChange(of: config.checkForUpdates) { _, enabled in
-            updates.checkIfDue(enabled: enabled)
+        .onChange(of: config.checkForUpdates) { _, _ in
+            updates.checkIfDue()
         }
         .onChange(of: config.settleSeconds) { _, value in
             // The text field accepts any number; clamp typed values to the range.
@@ -87,6 +87,7 @@ struct SettingsView: View {
             section(l("settings_section_advanced")) { advancedSection }
             section(l("settings_section_general")) { generalSection }
             section(l("settings_section_updates")) { updatesSection }
+            footer
         }
         .padding(Theme.Spacing.m)
     }
@@ -229,13 +230,6 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var updatesSection: some View {
-        HStack {
-            Text(l("updates_current_version"))
-            Spacer()
-            Text(updates.currentVersion)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-        }
         toggleRow(l("updates_auto_check"), isOn: $config.checkForUpdates)
 
         HStack(spacing: Theme.Spacing.s) {
@@ -257,6 +251,26 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// Status note closing the form: the running version and a shortcut to the
+    /// project page. Deliberately outside the sections, so it reads as a footnote
+    /// rather than a setting.
+    private var footer: some View {
+        HStack {
+            Text("\(l("updates_current_version")) \(updates.currentVersion)")
+                .monospacedDigit()
+            Spacer()
+            Link(destination: UpdateChecker.repositoryURL) {
+                HStack(spacing: 2) {
+                    Text(UpdateChecker.repository)
+                    Image(systemName: "arrow.up.right")
+                }
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, Theme.Spacing.xs)
     }
 
     @ViewBuilder
