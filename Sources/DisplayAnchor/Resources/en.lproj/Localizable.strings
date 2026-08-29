@@ -86,6 +86,10 @@
 "profile_keep_hint" = "Keep layout";
 "profile_delete_hint" = "Delete layout";
 "profile_default_label" = "Layout (%@)";
+"profiles_error_storage_unavailable" = "Saved layouts are unavailable: DisplayAnchor cannot access its storage folder.";
+"profiles_error_unreadable" = "Saved layouts could not be read. The original file was backed up before starting a new list.";
+"profiles_error_unsupported_version" = "Saved layouts were created by a newer version of DisplayAnchor and were left unchanged.";
+"profiles_error_write_failed" = "Could not save the layout. Check that your disk has free space and try again.";
 
 /* Notification */
 "notification_paused_title" = "Auto-restore paused";

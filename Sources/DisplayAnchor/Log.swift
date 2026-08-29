@@ -19,4 +19,6 @@ enum Log {
     static let ui = Logger(subsystem: subsystem, category: "ui")
     /// Update feed checks and installation.
     static let updates = Logger(subsystem: subsystem, category: "updates")
+    /// Reading, validating, and writing saved layout profiles.
+    static let profiles = Logger(subsystem: subsystem, category: "profiles")
 }

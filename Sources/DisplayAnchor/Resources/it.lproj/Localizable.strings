@@ -86,6 +86,10 @@
 "profile_keep_hint" = "Mantieni il layout";
 "profile_delete_hint" = "Elimina il layout";
 "profile_default_label" = "Layout (%@)";
+"profiles_error_storage_unavailable" = "I layout salvati non sono disponibili: DisplayAnchor non può accedere alla cartella di archiviazione.";
+"profiles_error_unreadable" = "Impossibile leggere i layout salvati. Il file originale è stato salvato come copia prima di iniziare un nuovo elenco.";
+"profiles_error_unsupported_version" = "I layout salvati sono stati creati da una versione più recente di DisplayAnchor e non sono stati modificati.";
+"profiles_error_write_failed" = "Impossibile salvare il layout. Verifica che il disco abbia spazio libero e riprova.";
 
 /* Notification */
 "notification_paused_title" = "Ripristino automatico in pausa";

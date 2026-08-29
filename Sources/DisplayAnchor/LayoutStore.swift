@@ -77,12 +77,14 @@ final class LayoutStore: ObservableObject {
 
     // MARK: - User actions
 
-    func saveCurrentLayout(label: String) {
+    @discardableResult
+    func saveCurrentLayout(label: String) -> Bool {
         var snapshot = DisplayEngine.snapshotCurrentLayout()
         snapshot.label = label.trimmingCharacters(in: .whitespaces).isEmpty ? defaultLabel(for: snapshot) : label
-        profiles.save(snapshot)
+        guard profiles.save(snapshot) else { return false }
         Log.restore.notice("saveCurrentLayout: saved '\(snapshot.label, privacy: .public)' fp=\(snapshot.fingerprint, privacy: .public) displays=\(snapshot.displays.count)")
         refreshCurrentState()
+        return true
     }
 
     func defaultLabel(for profile: LayoutProfile) -> String {
@@ -99,13 +101,11 @@ final class LayoutStore: ObservableObject {
     }
 
     func deleteProfile(fingerprint: String) {
-        profiles.delete(fingerprint: fingerprint)
-        refreshCurrentState()
+        if profiles.delete(fingerprint: fingerprint) { refreshCurrentState() }
     }
 
     func rename(fingerprint: String, to label: String) {
-        profiles.rename(fingerprint: fingerprint, to: label)
-        refreshCurrentState()
+        if profiles.rename(fingerprint: fingerprint, to: label) { refreshCurrentState() }
     }
 
     func diagnosticsText() -> String { DisplayEngine.diagnosticsText() }

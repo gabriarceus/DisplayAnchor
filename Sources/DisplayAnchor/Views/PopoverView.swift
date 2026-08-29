@@ -29,6 +29,16 @@ struct PopoverView: View {
 
             Divider()
 
+            if let issue = store.profiles.issue {
+                Label(profileStoreIssueText(issue), systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                Divider()
+            }
+
             // Fixed (non-scrolling) current-arrangement section. Keeping the mini-map
             // out of the ScrollView means it never moves when the details/list below
             // scroll, and it can't be stretched past the popover edge.
@@ -251,7 +261,7 @@ struct PopoverView: View {
     // MARK: - Actions
 
     private func saveCurrentLayout() {
-        store.saveCurrentLayout(label: store.matchedProfile?.label ?? "")
+        guard store.saveCurrentLayout(label: store.matchedProfile?.label ?? "") else { return }
         showSavedConfirmation = true
         confirmationTask?.cancel()
         confirmationTask = Task {
@@ -275,5 +285,14 @@ struct PopoverView: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    private func profileStoreIssueText(_ issue: ProfileStoreIssue) -> String {
+        switch issue {
+        case .storageUnavailable: return l("profiles_error_storage_unavailable")
+        case .unreadableDocument: return l("profiles_error_unreadable")
+        case .unsupportedDocumentVersion: return l("profiles_error_unsupported_version")
+        case .writeFailed: return l("profiles_error_write_failed")
+        }
     }
 }
