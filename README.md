@@ -54,6 +54,13 @@ clicks — see [Opening an unsigned app](#opening-an-unsigned-app) right below.
 The app has no Dock icon and no window: it lives in the menu bar, and everything happens
 in the panel that opens when you click its icon.
 
+## Contributing and support
+
+Bug reports and focused pull requests are welcome. Please read
+[CONTRIBUTING.md](CONTRIBUTING.md), especially the privacy note before sharing display
+diagnostics. Security-sensitive reports should use GitHub's private security advisory
+flow rather than a public issue.
+
 Prefer not to run a downloaded binary? [Build it from source](#build-from-source) —
 locally built apps skip the Gatekeeper step entirely.
 

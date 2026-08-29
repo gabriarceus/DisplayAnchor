@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a reproducible problem with DisplayAnchor.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include information you consider private. Display diagnostics may include monitor UUIDs and serial numbers.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the actual result and the result you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Connect …
+        2. Save/restore …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: macOS version, Mac model, dock/adapter, monitors, and app version.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Display diagnostics (optional)
+      description: Paste redacted output from Display details → Copy if it helps reproduce the issue.

@@ -29,6 +29,10 @@ let package = Package(
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
             resources: [.process("Resources")]
-        )
+        ),
+        .testTarget(
+            name: "DisplayAnchorTests",
+            dependencies: ["DisplayAnchor"]
+        ),
     ]
 )
