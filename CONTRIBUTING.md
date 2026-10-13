@@ -18,6 +18,9 @@ want to share: the diagnostics are useful but can identify specific hardware.
 - Do not commit generated `build/`, `.build/`, secrets, or Sparkle private keys.
 
 The app needs macOS 26 and Xcode 26 (Swift 6.2). Display configuration behavior must
-be tested manually with real monitor/dock configurations.
+be tested manually with real monitor/dock configurations. See
+[Development](docs/development.md) for build behavior, test coverage, and manual
+checks, and [Architecture](docs/architecture.md) for the source map and display flow.
+Agents should start with [AGENTS.md](AGENTS.md).
 
 By contributing, you agree that your contributions are licensed under the MIT License.
