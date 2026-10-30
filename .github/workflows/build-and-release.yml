@@ -79,6 +79,8 @@ jobs:
           # Derived from Info.plist rather than the ref, so a manual dispatch tags
           # the same version the appcast's download URL points at.
           tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ contains(env.TAG, '-') }}
           files: |
             build/${{ env.ZIP_NAME }}
             appcast/appcast.xml

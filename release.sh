@@ -57,6 +57,11 @@ cp "$ZIP" "$APPCAST_DIR/"
 # Push first: gh creates the tag at the remote HEAD, and the update feed starts
 # advertising this version the moment the release is published.
 git push origin HEAD
-gh release create "$TAG" "$ZIP" "$APPCAST_DIR/appcast.xml" --title "$VERSION" --generate-notes
+RELEASE_FLAGS=(--target "$(git rev-parse HEAD)")
+if [[ "$VERSION" == *-* ]]; then
+	RELEASE_FLAGS+=(--prerelease --latest=false)
+fi
+gh release create "$TAG" "$ZIP" "$APPCAST_DIR/appcast.xml" --title "$VERSION" --generate-notes \
+	"${RELEASE_FLAGS[@]}"
 
 echo "Published $TAG"

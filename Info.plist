@@ -19,9 +19,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.1</string>
+	<string>1.1.0-rc1</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>3</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>26.0</string>
 	<key>LSUIElement</key>
@@ -33,7 +33,7 @@
 	<key>SUFeedURL</key>
 	<string>https://github.com/gabriarceus/DisplayAnchor/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string></string>
+	<string>LgID/g/PYU/Is8BT0PwJ/KCvuUgJtyZ/0z60dB8DlZ4=</string>
 	<!-- Set explicitly so Sparkle never asks on its own: the app has its own
 	     "Check for updates automatically" toggle, which writes through to it. -->
 	<key>SUEnableAutomaticChecks</key>

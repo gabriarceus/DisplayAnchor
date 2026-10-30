@@ -10,14 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Dot next to the menu bar icon while an update is pending.
-- In-app updates through [Sparkle](https://github.com/sparkle-project/Sparkle): a new version is downloaded, verified against an EdDSA signature and installed from within the app, replacing the manual download-and-drag routine.
+- In-app updates through [Sparkle](https://github.com/sparkle-project/Sparkle): a new version is downloaded, verified against an EdDSA signature and installed from within the app, replacing the manual download-and-drag routine. The update verification public key is embedded in the app; signing and end-to-end rollout validation remain pending.
 - Notification when a check finds a new version, posted once per version.
 - Releases carry a signed `appcast.xml` asset, which is the feed the app reads.
 - Status footer in Settings with the running version and a link to the project on GitHub.
 
 ### Changed
 
-- `release.sh` refuses to publish a release whose `CFBundleVersion` was not bumped, since that is the value Sparkle compares.
+- `release.sh` refuses to publish a release whose `CFBundleVersion` was not bumped, since that is the value Sparkle compares. Both publication paths target the built commit and mark candidate versions as prereleases.
 - Raised the minimum MenuBarKit version to 1.2.0, retaining the sibling-checkout workflow for local development.
 - Settings → Updates no longer repeats the running version, which moved to the footer.
 - Settings → Updates offers **Install** in place of the **Download** button that opened the release page.
