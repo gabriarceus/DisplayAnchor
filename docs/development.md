@@ -39,8 +39,11 @@ second assembly recipe in documentation.
 
 The project's automated check is the SwiftPM test suite; the bundle check is the
 build script. Run both on macOS before requesting review, as required by Contributing.
-The release workflow builds and packages the app but does not currently run the test
-suite, so a successful workflow does not establish that the tests pass.
+The release workflow tests the channel-feed tools, builds, and packages the app but does not currently run the Swift test suite, so a successful workflow does not establish that the Swift tests pass.
+
+The Python standard-library suite in [scripts/test_appcast.py](../scripts/test_appcast.py) covers stable/RC feed merging, signature preservation, duplicate-build rejection, and publication to an isolated temporary Git remote. It runs through unittest discovery in the scripts directory and does not publish to GitHub or access credentials.
+
+The scripts directory contains release tooling and its tests. Merging the XML feed uses Python 3's standard library; publishing uses Git and Bash. No Python packages need installation, and these scripts are not copied into DisplayAnchor.app. Users of the distributed app need neither Python nor Git.
 
 Existing tests use Swift Testing and live in [Tests/DisplayAnchorTests](../Tests/DisplayAnchorTests).
 Use the matching test file when changing deterministic behavior.
@@ -53,6 +56,8 @@ Use the matching test file when changing deterministic behavior.
 | LayoutEditingTests.swift      | Snapping, overlap resolution, draft conversion, and stable identity           |
 | DisplayCountIconTests.swift   | Template rendering and display-count bounds                                   |
 | UpdateControllerTests.swift   | No-update completion and update-check error handling                          |
+| UpdateChannelTests.swift      | Stable defaults, persisted opt-in, channel filtering, and stale RC responses   |
+| CompactUpdateUserDriverTests.swift | Compact prompt size and explicit install/cancel choices                  |
 
 Display writes and callback timing need real hardware. Select manual checks that
 exercise the changed behavior:

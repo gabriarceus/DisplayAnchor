@@ -2,23 +2,17 @@ import Combine
 import Foundation
 import Sparkle
 
-/// Update pipeline backed by Sparkle, wired so the app keeps its own
-/// affordances instead of Sparkle's scheduled-reminder window: a silent feed
-/// check publishes [status] — which drives the menu bar dot, the settings row
-/// and the notification — and Sparkle's standard flow (alert, download,
-/// install, relaunch) is entered only when the user asks for it via [install].
-///
-/// Everything no-ops outside a .app bundle: Sparkle reads the feed URL and the
-/// public key from Info.plist, which `swift run` does not have.
+/// Publishes channel-filtered update state and starts installation on request.
+/// Checks are silent; unbundled runs have no updater.
 @MainActor
-final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
-    @preconcurrency SPUStandardUserDriverDelegate
-{
+final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
     /// Repository behind the update feed, and the project page linked from settings.
     static let repository = "gabriarceus/DisplayAnchor"
 
     /// Public page of the repository.
     static let repositoryURL = URL(string: "https://github.com/\(repository)")!
+
+    static let releasesURL = repositoryURL.appendingPathComponent("releases")
 
     private static let announcedVersionKey = "announcedUpdateVersion"
 
@@ -38,8 +32,9 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
 
     private let config: AppConfig
     private let defaults = UserDefaults.standard
-    private var userDriver: SPUStandardUserDriver?
+    private var userDriver: CompactUpdateUserDriver?
     private var updater: SPUUpdater?
+    private var needsChannelCheck = false
 
     init(config: AppConfig) {
         self.config = config
@@ -69,13 +64,20 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
     /// on without an updater.
     func start() {
         guard updater == nil, Bundle.main.bundleURL.pathExtension == "app" else { return }
-        let userDriver = SPUStandardUserDriver(hostBundle: .main, delegate: self)
+        let userDriver = CompactUpdateUserDriver(config: config) { [weak self] in
+            self?.needsChannelCheck == false
+        }
         let updater = SPUUpdater(
             hostBundle: .main,
             applicationBundle: .main,
             userDriver: userDriver,
             delegate: self
         )
+        if let legacyFeed = defaults.string(forKey: "SUFeedURL"),
+            legacyFeed.hasPrefix(Self.releasesURL.absoluteString + "/")
+        {
+            updater.clearFeedURLFromUserDefaults()
+        }
         updater.automaticallyChecksForUpdates = config.checkForUpdates
         do {
             try updater.start()
@@ -95,8 +97,7 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
         probe(manual: true)
     }
 
-    /// Hands over to Sparkle: release notes, download, install and relaunch are
-    /// its standard flow, and re-checking the feed is part of it.
+    /// Starts confirmation, download, installation, and relaunch through Sparkle.
     func install() {
         updater?.checkForUpdates()
     }
@@ -105,6 +106,40 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
     func setAutomaticChecks(_ enabled: Bool) {
         updater?.automaticallyChecksForUpdates = enabled
         if enabled { probe(manual: false) }
+    }
+
+    func updateChannelChanged() {
+        status = .idle
+        needsChannelCheck = true
+        userDriver?.dismissPendingUpdate()
+        checkSelectedChannelIfPossible()
+    }
+
+    private func checkSelectedChannelIfPossible() {
+        guard needsChannelCheck, updater?.canCheckForUpdates == true else { return }
+        needsChannelCheck = false
+        probe(manual: true)
+    }
+
+    func allowedChannels(for updater: SPUUpdater) -> Set<String> {
+        config.updateChannel.allowedChannels
+    }
+
+    func updater(
+        _ updater: SPUUpdater, shouldDownloadReleaseNotesForUpdate updateItem: SUAppcastItem
+    )
+        -> Bool
+    {
+        false
+    }
+
+    func updater(
+        _ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck,
+        error: (any Error)?
+    ) {
+        Task { @MainActor [weak self] in
+            self?.checkSelectedChannelIfPossible()
+        }
     }
 
     /// Silent feed check: shows no UI of its own and only drives the delegate
@@ -131,16 +166,19 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
     // MARK: - SPUUpdaterDelegate
 
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        guard !needsChannelCheck, config.updateChannel.allows(item.channel) else { return }
         Log.updates.info("Update available: \(item.displayVersionString, privacy: .public)")
         status = .available(item.displayVersionString)
     }
 
     func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: any Error) {
+        guard !needsChannelCheck else { return }
         status = .upToDate
         defaults.removeObject(forKey: Self.announcedVersionKey)
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
+        guard !needsChannelCheck else { return }
         let nsError = error as NSError
         guard
             nsError.domain != SUSparkleErrorDomain
@@ -151,18 +189,5 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
         Log.updates.error("Update check failed: \(error.localizedDescription, privacy: .public)")
         // Losing the network says nothing about a known pending update.
         if availableVersion == nil { status = .failed }
-    }
-
-    // MARK: - SPUStandardUserDriverDelegate
-
-    /// The menu bar dot and the notification are the reminder, so Sparkle must
-    /// not open its window on its own schedule.
-    var supportsGentleScheduledUpdateReminders: Bool { true }
-
-    func standardUserDriverShouldHandleShowingScheduledUpdate(
-        _ update: SUAppcastItem,
-        andInImmediateFocus immediateFocus: Bool
-    ) -> Bool {
-        false
     }
 }

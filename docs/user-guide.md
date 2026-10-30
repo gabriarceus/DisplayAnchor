@@ -79,6 +79,7 @@ an exclamation mark when the current arrangement differs from the saved one.
 | Wait after displays change         | 3 seconds           | Quiet period before checking for automatic restore                          |
 | Launch at login                    | System registration | Register the built app to start at login                                    |
 | Check for updates automatically    | On                  | Check the update feed in the background                                     |
+| Update channel                     | Stable              | Include release candidates only when Stable and RC is selected              |
 
 For adding translations, read [Development](development.md#ui-and-localization).
 Layouts and settings stay on your Mac. Their storage locations are documented in
@@ -89,13 +90,16 @@ Layouts and settings stay on your Mac. Their storage locations are documented in
 The app integrates Sparkle to check for and install updates. When a newer version is
 available, a dot appears next to the menu bar icon and on the settings gear, and a
 notification appears once per version. Choose Install in Settings → Updates to enter
-Sparkle's release-notes, download, install, and relaunch flow. The running version is
-shown in the Settings footer.
+a compact Install/Cancel confirmation, followed by Sparkle's download, verification, installation, and relaunch flow. Release notes open from a link in Settings. The running version is shown in the Settings footer.
 
 Automatic checks run at launch and every six hours without opening an update window.
 You can disable them and still check manually. Update archives are verified against
 the public signing key embedded in the app. This depends on a correctly configured
 signed release; see [Releases](releases.md) for setup and validation details.
+
+The update channel defaults to Stable. Choose Stable and RC to receive release candidates as well as stable releases. Release candidates may contain bugs. Switching back to Stable removes pending RC offers and checks the stable channel; it does not install an older version over the app already running.
+
+Automatic checks discover updates. Downloads and installations start only after you choose Install.
 
 The app has no accounts or telemetry. Network activity is limited to update checks
 and the update flow you choose to start. Versions from before the Sparkle integration

@@ -42,24 +42,43 @@ final class AppConfig: ObservableObject {
         static let appTint = "appTint"
         static let appLanguage = "appLanguage"
         static let checkForUpdates = "checkForUpdates"
+        static let updateChannel = "updateChannel"
     }
 
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
-    @Published var autoRestoreEnabled: Bool { didSet { defaults.set(autoRestoreEnabled, forKey: Keys.autoRestoreEnabled) } }
-    @Published var notifyOnRestore: Bool { didSet { defaults.set(notifyOnRestore, forKey: Keys.notifyOnRestore) } }
-    @Published var settleSeconds: Int { didSet { defaults.set(settleSeconds, forKey: Keys.settleSeconds) } }
+    @Published var autoRestoreEnabled: Bool {
+        didSet { defaults.set(autoRestoreEnabled, forKey: Keys.autoRestoreEnabled) }
+    }
+    @Published var notifyOnRestore: Bool {
+        didSet { defaults.set(notifyOnRestore, forKey: Keys.notifyOnRestore) }
+    }
+    @Published var settleSeconds: Int {
+        didSet { defaults.set(settleSeconds, forKey: Keys.settleSeconds) }
+    }
     /// Raw appearance selection; any value that is not an `AppAppearance` raw value falls back to system.
-    @Published var appAppearanceRaw: String { didSet { defaults.set(appAppearanceRaw, forKey: Keys.appAppearance) } }
+    @Published var appAppearanceRaw: String {
+        didSet { defaults.set(appAppearanceRaw, forKey: Keys.appAppearance) }
+    }
     /// Raw tint mode selection; any value that is not an `AppTintMode` raw value falls back to none.
-    @Published var appTintModeRaw: String { didSet { defaults.set(appTintModeRaw, forKey: Keys.appTintMode) } }
+    @Published var appTintModeRaw: String {
+        didSet { defaults.set(appTintModeRaw, forKey: Keys.appTintMode) }
+    }
     /// Raw custom tint selection; any value that is not an `AppTint` raw value falls back to orange.
     @Published var appTintRaw: String { didSet { defaults.set(appTintRaw, forKey: Keys.appTint) } }
     /// Raw UI language selection; an empty value follows the system language.
-    @Published var appLanguageRaw: String { didSet { defaults.set(appLanguageRaw, forKey: Keys.appLanguage) } }
-    /// Whether to poll GitHub Releases for a newer version in the background.
-    /// The manual check in settings ignores this.
-    @Published var checkForUpdates: Bool { didSet { defaults.set(checkForUpdates, forKey: Keys.checkForUpdates) } }
+    @Published var appLanguageRaw: String {
+        didSet { defaults.set(appLanguageRaw, forKey: Keys.appLanguage) }
+    }
+    /// Enables scheduled update checks; manual checks remain available.
+    @Published var checkForUpdates: Bool {
+        didSet { defaults.set(checkForUpdates, forKey: Keys.checkForUpdates) }
+    }
+    @Published var updateChannelRaw: String {
+        didSet { defaults.set(updateChannelRaw, forKey: Keys.updateChannel) }
+    }
+
+    var updateChannel: UpdateChannel { UpdateChannel(rawValue: updateChannelRaw) ?? .stable }
 
     var appAppearance: AppAppearance { AppAppearance(rawValue: appAppearanceRaw) ?? .system }
 
@@ -78,7 +97,8 @@ final class AppConfig: ObservableObject {
         localizer.string(key, arguments: arguments)
     }
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         defaults.register(defaults: [
             Keys.autoRestoreEnabled: false,
             Keys.notifyOnRestore: true,
@@ -88,6 +108,7 @@ final class AppConfig: ObservableObject {
             Keys.appTint: AppTint.orange.rawValue,
             Keys.appLanguage: "",
             Keys.checkForUpdates: true,
+            Keys.updateChannel: UpdateChannel.stable.rawValue,
         ])
         // Migrate the pre-mode tint value: "none" was a tint choice, now a mode.
         if defaults.string(forKey: Keys.appTint) == "none" {
@@ -97,10 +118,13 @@ final class AppConfig: ObservableObject {
         autoRestoreEnabled = defaults.bool(forKey: Keys.autoRestoreEnabled)
         notifyOnRestore = defaults.bool(forKey: Keys.notifyOnRestore)
         settleSeconds = defaults.integer(forKey: Keys.settleSeconds)
-        appAppearanceRaw = defaults.string(forKey: Keys.appAppearance) ?? AppAppearance.system.rawValue
+        appAppearanceRaw =
+            defaults.string(forKey: Keys.appAppearance) ?? AppAppearance.system.rawValue
         appTintModeRaw = defaults.string(forKey: Keys.appTintMode) ?? AppTintMode.none.rawValue
         appTintRaw = defaults.string(forKey: Keys.appTint) ?? AppTint.orange.rawValue
         appLanguageRaw = defaults.string(forKey: Keys.appLanguage) ?? ""
         checkForUpdates = defaults.bool(forKey: Keys.checkForUpdates)
+        updateChannelRaw =
+            defaults.string(forKey: Keys.updateChannel) ?? UpdateChannel.stable.rawValue
     }
 }

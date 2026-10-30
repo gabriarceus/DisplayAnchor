@@ -39,9 +39,8 @@ rm -f "$ZIP"
 # ditto (not zip) preserves the bundle's symlinks and resource forks.
 ditto -c -k --keepParent "build/DisplayAnchor.app" "$ZIP"
 
-# Sparkle reads the appcast, not the GitHub API, so the release is only visible to
-# existing installs once a signed feed is attached to it. The EdDSA key comes from
-# the Keychain (see generate_keys); an unsigned enclosure is rejected on install.
+# The per-release appcast also supplies the signed item for the channel feed.
+# Signing uses the local Keychain; archive signatures survive the feed merge.
 GENERATE_APPCAST=$(find .build/artifacts -type f -name generate_appcast | head -1)
 [[ -n "$GENERATE_APPCAST" ]] || { echo "generate_appcast not found — run 'swift package resolve'." >&2; exit 1; }
 APPCAST_DIR="build/appcast"
@@ -54,8 +53,7 @@ cp "$ZIP" "$APPCAST_DIR/"
 	-o "$APPCAST_DIR/appcast.xml" \
 	"$APPCAST_DIR"
 
-# Push first: gh creates the tag at the remote HEAD, and the update feed starts
-# advertising this version the moment the release is published.
+# Publish the assets before the shared feed advertises their download URLs.
 git push origin HEAD
 RELEASE_FLAGS=(--target "$(git rev-parse HEAD)")
 if [[ "$VERSION" == *-* ]]; then
@@ -63,5 +61,6 @@ if [[ "$VERSION" == *-* ]]; then
 fi
 gh release create "$TAG" "$ZIP" "$APPCAST_DIR/appcast.xml" --title "$VERSION" --generate-notes \
 	"${RELEASE_FLAGS[@]}"
+bash scripts/publish_appcast.sh "$APPCAST_DIR/appcast.xml"
 
 echo "Published $TAG"

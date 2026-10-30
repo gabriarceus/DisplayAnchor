@@ -18,9 +18,9 @@ helpers and signatures intact during packaging, sign the outer bundle last, and
 verify the complete bundle. A damaged framework signature can prevent future updates.
 The build script uses bundle-preserving copies and verifies the result.
 
-The feed is appcast.xml attached to the latest GitHub release. It points to the
-versioned archive and carries the update signature. Both assets are needed for the
-release to reach installed apps through Sparkle.
+The primary feed is appcast.xml on the dedicated updates branch, served through raw.githubusercontent.com. It retains the newest stable item and the newest RC item. Stable items use Sparkle’s default channel; RC items use its rc channel. The app allows only the default channel unless the user opts into Stable and RC. Archive signatures remain unchanged when the signed items are merged into this feed.
+
+Each GitHub release still carries its own appcast.xml beside the versioned archive. These per-release feeds remain usable for migrating older updater-enabled builds; channel labels are applied to the shared feed. New clients read the shared feed without querying the GitHub Releases API.
 
 ## In-app update behavior
 
@@ -29,10 +29,11 @@ the menu bar indicator, settings indicator, and a notification announce an updat
 Notifications are deduplicated by version. A failed check preserves a known pending
 update rather than removing its reminder.
 
-The standard Sparkle release-notes, download, install, and relaunch flow starts when
-the user chooses Install. The app supports disabling automatic checks while retaining
-manual checks. It runs without an updater outside a built app bundle, and logs startup
-configuration errors without raising a modal alert or blocking display management.
+CompactUpdateUserDriver supplies a compact Install/Cancel confirmation and keeps scheduled update offers silent. Sparkle’s standard user driver handles download progress, extraction, errors, installation, and relaunch. Release notes are linked from Settings instead of embedded in the confirmation. Informational and major-upgrade notices keep Sparkle’s standard presentation when the user opens them.
+
+Automatic updates are disabled through SUAllowsAutomaticUpdates. The automatic-check toggle controls discovery only; download and installation start after the user chooses Install. This also prevents an automatic-install preference left by the older standard alert from bypassing the compact confirmation.
+
+The app supports disabling automatic checks while retaining manual checks. Channel changes clear old offers and queue a fresh check; responses from the previous selection cannot restore an RC offer after switching to Stable. The change never requests a downgrade. Unbundled runs have no updater, and startup errors are logged without blocking display management.
 
 Sparkle removes download quarantine from the bundle it installs, so in-app updates
 avoid repeating the downloaded app's first-launch approval. Apps from before the
@@ -52,8 +53,7 @@ maintainer decision.
 The local release script requires a clean working tree and a new version tag. It
 checks the build version against the latest local tag, builds the app, creates a
 bundle-preserving archive, and generates the signed appcast using the local Keychain.
-It then pushes the current commit and creates a GitHub release with the archive and
-feed. Running it is a publication action, not a build-only check.
+It then pushes the current commit, creates a GitHub release with the archive and per-release feed, and publishes the merged channel feed to the updates branch. Running it is a publication action, not a build-only check.
 
 The GitHub workflow is the alternative publication path. A version tag triggers it;
 manual dispatch can build an artifact without publishing or explicitly request a
@@ -63,15 +63,15 @@ secret configured by the maintainer. Keep tags, bundle versions, feed version, a
 asset URLs consistent. The workflow does not repeat the local script's clean-tree
 and previous-build checks.
 
-Both publication paths mark versions with a prerelease suffix as GitHub prereleases and create new tags at the built commit. The production feed uses GitHub's latest stable release, so it does not expose prereleases. Test a candidate with a separate test feed before promoting a version to stable; publishing a candidate alone does not verify the production update path.
+Both publication paths mark versions with a prerelease suffix as GitHub prereleases and create new tags at the built commit. After release assets are available, [merge_appcast.py](../scripts/merge_appcast.py) classifies RC versions, retains the newest item for each channel, and rejects conflicting archives that reuse a build number. [publish_appcast.sh](../scripts/publish_appcast.sh) commits the merged feed in a temporary worktree and pushes only the updates branch. It creates that branch on first publication. Workflow runs are serialized; feed pushes never force-overwrite a concurrent publication. The temporary worktree is removed without changing the development branch.
 
 ### Candidate feed testing
 
-Before the first updater-enabled stable release, the production feed returns HTTP 404 because the previous stable release has no appcast. This makes Check for Updates report failure even when candidate signing is correct. The version-specific appcast attached to a candidate release is the test feed.
+New clients use the shared feed and the channel picker for candidate testing. Stable must ignore RC items; Stable and RC must include both channels. Check pending indicators, confirmation, download, install, relaunch, and an up-to-date result after installation. Also check channel changes during a running check, silent scheduled checks, and the automatic-check toggle.
 
-For a manual candidate test, quit the installed app, override only SUFeedURL in its preferences with the version-specific candidate appcast URL, and reopen it. Sparkle supports this override for testing. Pointing an installed candidate at its own appcast should report that it is up to date. Pointing it at a newer candidate should expose the update for installation. The update must still verify against the public key embedded in the installed app.
+Versions rc1 and rc2 use the former latest-release feed, which returns HTTP 404 while the latest stable release has no appcast. To migrate one of those clients, quit it, temporarily override SUFeedURL with the version-specific newer release appcast, and reopen it. The first channel-aware build clears old overrides under this repository’s releases URL at startup, then uses the shared feed and Stable default. Other custom test-feed URLs remain unchanged.
 
-Quit the app and remove the SUFeedURL preference after testing, then reopen it to return to the production feed. The test override takes priority over Info.plist and persists across updates until removed. It changes neither the embedded feed nor the update signature requirements.
+A shared feed containing only RC items is valid: Stable users receive no update offer until a stable item is published. The updates branch must exist before the new feed can be checked. Source integration and a successful build do not establish that the live channel feed or installation UI has been verified.
 
 Local appcast generation caches archive metadata. Repeating generation for the same
 version can reuse stale metadata and produce the wrong feed version. If that happens,
@@ -84,7 +84,7 @@ The updater integration and maintainer-supplied public key are in place. [Versio
 
 ### Remaining rollout checkpoints
 
-The original AutoUpdateScriptverse plan covers two apps and uses their former names and paths. DisplayAnchor already has the dependency, controller, settings, framework packaging, release script, and CI appcast generation. Continue from that implementation and the decisions in this guide: retain ad-hoc signing and the release-asset feed. The other app has its own rollout.
+The original AutoUpdateScriptverse plan covers two apps and uses their former names and paths. DisplayAnchor already has the dependency, controller, settings, framework packaging, release script, and CI appcast generation. Continue from that implementation and the decisions in this guide: retain ad-hoc signing and use the shared channel feed introduced in rc3. The other app has its own rollout.
 
 1. Configure update trust. The maintainer supplied the public key for SUPublicEDKey on 2026-10-30 and reports the local export and CI secret configured. Local and published CI archive signatures have been verified against that key. Keep a separate encrypted backup of the private key; a copy on the same disk as the Keychain does not protect against disk loss.
 2. Prepare the first updater-enabled release candidate. Version 1.1.0-rc1, build 3, is published and verified as described above. Older releases without Sparkle need a manual upgrade to this baseline. Future publication still requires explicit authorization.
@@ -108,3 +108,5 @@ appcast and the correct archive URL, and test from an older installed build thro
 signature validation, installation, and relaunch. Also confirm silent scheduled
 checks and the automatic-check toggle. Source integration alone does not establish
 that signing setup or end-to-end updates work.
+
+Version 1.1.0-rc3, build 5, prepares the compact confirmation and shared stable/RC feed. Its publication, first updates-branch creation, migration from rc2, and manual channel/UI checks remain pending.

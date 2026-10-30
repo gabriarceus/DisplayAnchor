@@ -37,6 +37,16 @@
 "updates_check_failed" = "Controllo non riuscito";
 "updates_available" = "Versione %@ disponibile";
 "updates_install" = "Installa %@";
+"updates_channel" = "Canale aggiornamenti";
+"updates_channel_stable" = "Stabile";
+"updates_channel_rc" = "Stabile e RC";
+"updates_channel_rc_hint" = "Le release candidate possono contenere errori. Tornare a Stabile non installa una versione precedente.";
+"updates_release_notes" = "Note di rilascio";
+"updates_confirm_title" = "Installare la versione %@?";
+"updates_confirm_message" = "L’aggiornamento verrà scaricato e verificato. Ti verrà chiesto di riavviare quando sarà pronto.";
+"updates_confirm_restart" = "L’aggiornamento è pronto. DisplayAnchor verrà riavviata per completare l’installazione.";
+"updates_confirm_install" = "Installa";
+"updates_confirm_cancel" = "Annulla";
 
 /* Popover */
 "popover_no_displays" = "Nessuno schermo rilevato.";

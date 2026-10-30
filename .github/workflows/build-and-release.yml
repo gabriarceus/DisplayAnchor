@@ -12,8 +12,8 @@ on:
         default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -26,6 +26,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Test channel feed publication
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
 
       - name: Build DisplayAnchor.app
         run: |
@@ -52,8 +55,8 @@ jobs:
           path: build/DisplayAnchor.zip
           if-no-files-found: error
 
-      # Sparkle reads this feed, not the GitHub API: the enclosure has to carry an
-      # EdDSA signature, and the download URL has to point at this release's asset.
+      # Keep the per-release appcast for older clients; its signed archive item
+      # is also merged into the channel feed after the assets are published.
       - name: Generate signed appcast
         if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
         env:
@@ -85,3 +88,10 @@ jobs:
             build/${{ env.ZIP_NAME }}
             appcast/appcast.xml
           generate_release_notes: true
+
+      - name: Publish channel appcast
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        run: |
+          git config user.name "$(git log -1 --format=%an)"
+          git config user.email "$(git log -1 --format=%ae)"
+          bash scripts/publish_appcast.sh appcast/appcast.xml

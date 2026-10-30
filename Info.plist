@@ -19,25 +19,25 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.1.0-rc2</string>
+	<string>1.1.0-rc3</string>
 	<key>CFBundleVersion</key>
-	<string>4</string>
+	<string>5</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>26.0</string>
 	<key>LSUIElement</key>
 	<true/>
-	<!-- Sparkle. The feed is the appcast.xml asset of the newest release, so the
-	     URL stays valid without a separate host. SUPublicEDKey is the public half
-	     of the EdDSA pair from `.build/artifacts/sparkle/Sparkle/bin/generate_keys`;
-	     an ad-hoc signed app cannot rotate it, so it is fixed once published. -->
+	<!-- The updates branch hosts the stable and RC channels. Archive signatures
+	     use this fixed public key because ad-hoc signed apps cannot rotate it. -->
 	<key>SUFeedURL</key>
-	<string>https://github.com/gabriarceus/DisplayAnchor/releases/latest/download/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/gabriarceus/DisplayAnchor/updates/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>LgID/g/PYU/Is8BT0PwJ/KCvuUgJtyZ/0z60dB8DlZ4=</string>
 	<!-- Set explicitly so Sparkle never asks on its own: the app has its own
 	     "Check for updates automatically" toggle, which writes through to it. -->
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
+	<key>SUAllowsAutomaticUpdates</key>
+	<false/>
 	<key>SUScheduledCheckInterval</key>
 	<integer>21600</integer>
 </dict>

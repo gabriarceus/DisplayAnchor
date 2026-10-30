@@ -9,14 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Update channel selection in Settings: Stable by default, with an opt-in for stable releases and release candidates.
 - Dot next to the menu bar icon while an update is pending.
 - In-app updates through [Sparkle](https://github.com/sparkle-project/Sparkle): a new version is downloaded, verified against an EdDSA signature and installed from within the app, replacing the manual download-and-drag routine. Local and CI archive signatures are verified, and the maintainer confirmed an installed candidate-to-candidate update.
 - Notification when a check finds a new version, posted once per version.
-- Releases carry a signed `appcast.xml` asset, which is the feed the app reads.
+- Releases carry a per-release `appcast.xml` with the archive signature for compatibility with older updater-enabled builds.
 - Status footer in Settings with the running version and a link to the project on GitHub.
 
 ### Changed
 
+- Update installation starts with a compact Install/Cancel confirmation; release notes are linked from Settings and Sparkle keeps its standard progress and installation UI.
+- Stable and RC updates share a channel-filtered appcast on the `updates` branch. Release publication preserves the latest signed archive item for each channel and publishes the feed after the release assets are available.
 - `release.sh` refuses to publish a release whose `CFBundleVersion` was not bumped, since that is the value Sparkle compares. Both publication paths target the built commit and mark candidate versions as prereleases.
 - Raised the minimum MenuBarKit version to 1.2.0, retaining the sibling-checkout workflow for local development.
 - Settings → Updates no longer repeats the running version, which moved to the footer.
