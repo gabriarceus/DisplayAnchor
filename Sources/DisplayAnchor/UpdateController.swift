@@ -43,7 +43,9 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
 
     init(config: AppConfig) {
         self.config = config
-        currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0"
+        currentVersion =
+            Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+            ?? "0.0.0"
         super.init()
     }
 
@@ -78,7 +80,8 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
         do {
             try updater.start()
         } catch {
-            Log.updates.error("Updater not started: \(error.localizedDescription, privacy: .public)")
+            Log.updates.error(
+                "Updater not started: \(error.localizedDescription, privacy: .public)")
             return
         }
         self.userDriver = userDriver
@@ -119,7 +122,7 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
     /// that re-checks for as long as the app runs from repeating the alert.
     func consumeUnannouncedUpdate() -> String? {
         guard let version = availableVersion,
-              defaults.string(forKey: Self.announcedVersionKey) != version
+            defaults.string(forKey: Self.announcedVersionKey) != version
         else { return nil }
         defaults.set(version, forKey: Self.announcedVersionKey)
         return version
@@ -138,6 +141,13 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate,
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
+        let nsError = error as NSError
+        guard
+            nsError.domain != SUSparkleErrorDomain
+                || nsError.code != Int(SUError.noUpdateError.rawValue)
+        else {
+            return
+        }
         Log.updates.error("Update check failed: \(error.localizedDescription, privacy: .public)")
         // Losing the network says nothing about a known pending update.
         if availableVersion == nil { status = .failed }

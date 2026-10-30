@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Gatekeeper hint under the update button. It described the manual download Sparkle replaces, and its advice (right-click → Open) no longer works on the macOS versions this app supports.
 - The hand-written GitHub Releases poll and its version parsing, superseded by Sparkle's feed.
 
+### Fixed
+
+- Update checks keep the up-to-date result when Sparkle completes with its no-update error code, rather than showing a failed check.
+
 ## [1.0.1] - 2026-08-20
 
 ### Added

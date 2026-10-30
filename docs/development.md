@@ -52,6 +52,7 @@ Use the matching test file when changing deterministic behavior.
 | DisplayMapGeometryTests.swift | Scaling, centering, adjacency, negative coordinates, and mixed orientations   |
 | LayoutEditingTests.swift      | Snapping, overlap resolution, draft conversion, and stable identity           |
 | DisplayCountIconTests.swift   | Template rendering and display-count bounds                                   |
+| UpdateControllerTests.swift   | No-update completion and update-check error handling                          |
 
 Display writes and callback timing need real hardware. Select manual checks that
 exercise the changed behavior:

@@ -65,6 +65,14 @@ and previous-build checks.
 
 Both publication paths mark versions with a prerelease suffix as GitHub prereleases and create new tags at the built commit. The production feed uses GitHub's latest stable release, so it does not expose prereleases. Test a candidate with a separate test feed before promoting a version to stable; publishing a candidate alone does not verify the production update path.
 
+### Candidate feed testing
+
+Before the first updater-enabled stable release, the production feed returns HTTP 404 because the previous stable release has no appcast. This makes Check for Updates report failure even when candidate signing is correct. The version-specific appcast attached to a candidate release is the test feed.
+
+For a manual candidate test, quit the installed app, override only SUFeedURL in its preferences with the version-specific candidate appcast URL, and reopen it. Sparkle supports this override for testing. Pointing an installed candidate at its own appcast should report that it is up to date. Pointing it at a newer candidate should expose the update for installation. The update must still verify against the public key embedded in the installed app.
+
+Quit the app and remove the SUFeedURL preference after testing, then reopen it to return to the production feed. The test override takes priority over Info.plist and persists across updates until removed. It changes neither the embedded feed nor the update signature requirements.
+
 Local appcast generation caches archive metadata. Repeating generation for the same
 version can reuse stale metadata and produce the wrong feed version. If that happens,
 clear Sparkle's generate-appcast cache in the user's Library/Caches before generating
@@ -81,6 +89,8 @@ The original AutoUpdateScriptverse plan covers two apps and uses their former na
 1. Configure update trust. The maintainer supplied the public key for SUPublicEDKey on 2026-10-30 and reports the local export and CI secret configured. Local and published CI archive signatures have been verified against that key. Keep a separate encrypted backup of the private key; a copy on the same disk as the Keychain does not protect against disk loss.
 2. Prepare the first updater-enabled release candidate. Version 1.1.0-rc1, build 3, is published and verified as described above. Older releases without Sparkle need a manual upgrade to this baseline. Future publication still requires explicit authorization.
 3. Verify an actual update between two updater-enabled builds. From the older installed bundle, confirm manual checking, silent scheduled checks, the automatic-check toggle, pending indicators, download, signature validation, installation, and relaunch into the newer version. A successful build alone does not complete this checkpoint.
+
+The maintainer has installed 1.1.0-rc1. Version 1.1.0-rc2, build 4, is prepared as the next update target and fixes the no-update result being overwritten by Sparkle's completion callback. An rc1 check against its own candidate feed can still show failure because rc1 has that bug; an rc1 check against a newer valid candidate exercises the update-available path instead. Publication and the rc1-to-rc2 test remain pending.
 
 Before the first updater-enabled release, the maintainer must configure a signing
 key pair, embed the public key through SUPublicEDKey, and provide the matching private
