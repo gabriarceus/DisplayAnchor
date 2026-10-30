@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Dot next to the menu bar icon while an update is pending.
-- In-app updates through [Sparkle](https://github.com/sparkle-project/Sparkle): a new version is downloaded, verified against an EdDSA signature and installed from within the app, replacing the manual download-and-drag routine. The update verification public key is embedded in the app; local and CI archive signatures are verified, while end-to-end rollout validation remains pending.
+- In-app updates through [Sparkle](https://github.com/sparkle-project/Sparkle): a new version is downloaded, verified against an EdDSA signature and installed from within the app, replacing the manual download-and-drag routine. Local and CI archive signatures are verified, and the maintainer confirmed an installed candidate-to-candidate update.
 - Notification when a check finds a new version, posted once per version.
 - Releases carry a signed `appcast.xml` asset, which is the feed the app reads.
 - Status footer in Settings with the running version and a link to the project on GitHub.
