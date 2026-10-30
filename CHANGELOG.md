@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `release.sh` refuses to publish a release whose `CFBundleVersion` was not bumped, since that is the value Sparkle compares.
+- Raised the minimum MenuBarKit version to 1.2.0, retaining the sibling-checkout workflow for local development.
 - Settings → Updates no longer repeats the running version, which moved to the footer.
 - Settings → Updates offers **Install** in place of the **Download** button that opened the release page.
 - Shortened the README to a project overview and moved usage, architecture, development, and release guidance into dedicated documents, with an agent context entry point.

@@ -74,6 +74,14 @@ The updater integration is implemented, but its initial signing setup and end-to
 rollout remain pending validation. Keep this status current after the maintainer
 completes the setup and verifies the first signed release.
 
+### Remaining rollout checkpoints
+
+The original AutoUpdateScriptverse plan covers two apps and uses their former names and paths. DisplayAnchor already has the dependency, controller, settings, framework packaging, release script, and CI appcast generation. Continue from that implementation and the decisions in this guide: retain ad-hoc signing and the release-asset feed. The other app has its own rollout.
+
+1. Configure update trust. The maintainer must select the signing key, keep its private material outside the repository, and supply only its public value for SUPublicEDKey. Set up the matching local and CI signing access separately. This checkpoint is complete when the built app embeds the selected public key and an archive can be signed and verified with the matching key. Key setup is still pending as of 2026-10-30.
+2. Prepare the first updater-enabled release candidate. Increase both bundle versions, run the tests and bundle build, and validate the generated appcast's version, archive URL, and signature. Publication requires separate authorization. Older releases without Sparkle need a manual upgrade to this baseline.
+3. Verify an actual update between two updater-enabled builds. From the older installed bundle, confirm manual checking, silent scheduled checks, the automatic-check toggle, pending indicators, download, signature validation, installation, and relaunch into the newer version. A successful build alone does not complete this checkpoint.
+
 Before the first updater-enabled release, the maintainer must configure a signing
 key pair, embed the public key through SUPublicEDKey, and provide the matching private
 key to the local Keychain and CI signing setup. Use Sparkle's supplied key tools for

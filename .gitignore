@@ -1,8 +1,8 @@
 # SwiftPM
 .build/
 .swiftpm/
-# Only written when MenuBarKit resolves from GitHub; `from: "1.0.0"` already
-# floors the version, and keeping it would churn when flipping to the local path.
+# Dependency requirements live in Package.swift; resolution changes when switching
+# between the sibling MenuBarKit checkout and GitHub.
 Package.resolved
 
 # build.sh output

@@ -11,6 +11,8 @@ SwiftPM resolves MenuBarKit from GitHub by default. When a sibling MenuBarKit ch
 exists, the manifest selects that local package instead, which allows work on both
 projects together.
 
+The minimum remote MenuBarKit version is 1.2.0. Local builds use the sibling checkout's current contents, regardless of its tags; check its revision when validating a dependency update.
+
 SwiftPM caches the evaluated manifest. Adding or removing the sibling checkout can
 leave the old dependency choice cached even though the filesystem changed. Purge the
 package cache and reset package state after switching; reset alone does not clear
