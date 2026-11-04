@@ -18,20 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update checks run silently at launch and every six hours. Manual checks remain available when automatic checks are disabled.
 - Install replaces the manual Download link, with a compact confirmation and a scrollable changelog when release notes are available.
 - Raised the minimum MenuBarKit version to 1.2.0.
 - Release tooling publishes a shared Stable/RC appcast, preserves archive signatures, and rejects reused build numbers. Candidate releases are marked as prereleases.
 - Shortened the README and moved usage, architecture, development, and release guidance into dedicated documents.
+- Update checks run silently at launch and every six hours. Manual checks remain available when automatic checks are disabled.
+
+### Fixed
+
+- Switching update channels during an active session waits for completion and checks the latest selection without getting stuck on Checking.
+- Up-to-date checks no longer show a failed result after Sparkle completes the check.
 
 ### Removed
 
 - Custom GitHub release polling and the outdated Gatekeeper hint in update settings.
-
-### Fixed
-
-- Up-to-date checks no longer show a failed result after Sparkle completes the check.
-- Switching update channels during an active session waits for completion and checks the latest selection without getting stuck on Checking.
 
 ## [1.0.1] - 2026-08-20
 
