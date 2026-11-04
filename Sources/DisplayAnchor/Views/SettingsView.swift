@@ -51,6 +51,9 @@ struct SettingsView: View {
         .onChange(of: config.checkForUpdates) { _, enabled in
             updates.setAutomaticChecks(enabled)
         }
+        .onChange(of: config.updateChannelRaw) { _, _ in
+            updates.updateChannelChanged()
+        }
         .onChange(of: config.settleSeconds) { _, value in
             // The text field accepts any number; clamp typed values to the range.
             let clamped = min(max(value, Self.settleRange.lowerBound), Self.settleRange.upperBound)
@@ -71,10 +74,13 @@ struct SettingsView: View {
     }
 
     private var header: some View {
-        PanelHeader(title: l("common_settings"), leading: {
-            GlassIconButton(systemImage: "chevron.left", action: onBack)
-                .hoverTip(l("common_back"))
-        })
+        PanelHeader(
+            title: l("common_settings"),
+            leading: {
+                GlassIconButton(systemImage: "chevron.left", action: onBack)
+                    .hoverTip(l("common_back"))
+            }
+        )
         .padding(.horizontal, Theme.Spacing.m)
         .padding(.vertical, 10)
     }
@@ -154,7 +160,9 @@ struct SettingsView: View {
             Text(l("common_language"))
             Spacer()
             Picker(l("common_language"), selection: $config.appLanguageRaw) {
-                ForEach(Bundle.appResources.languageOptions(systemLabel: l("common_language_system"))) { option in
+                ForEach(
+                    Bundle.appResources.languageOptions(systemLabel: l("common_language_system"))
+                ) { option in
                     Text(option.name).tag(option.code)
                 }
             }
@@ -180,7 +188,9 @@ struct SettingsView: View {
                 .frame(width: 16, height: 16)
                 .overlay(
                     Circle()
-                        .strokeBorder(.primary.opacity(config.appTint == tint ? 0.6 : 0), lineWidth: 1.5)
+                        .strokeBorder(
+                            .primary.opacity(config.appTint == tint ? 0.6 : 0), lineWidth: 1.5
+                        )
                         .padding(-3)
                 )
                 .contentShape(Circle())
@@ -213,9 +223,13 @@ struct SettingsView: View {
             Stepper("", value: $config.settleSeconds, in: Self.settleRange)
                 .labelsHidden()
         }
-        Text(l("settings_settle_description", Self.settleRange.lowerBound, Self.settleRange.upperBound))
-            .font(.caption)
-            .foregroundStyle(.secondary)
+        Text(
+            l(
+                "settings_settle_description", Self.settleRange.lowerBound,
+                Self.settleRange.upperBound)
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder
@@ -232,6 +246,22 @@ struct SettingsView: View {
     private var updatesSection: some View {
         toggleRow(l("updates_auto_check"), isOn: $config.checkForUpdates)
 
+        HStack {
+            Text(l("updates_channel"))
+            Spacer()
+            Picker(l("updates_channel"), selection: $config.updateChannelRaw) {
+                Text(l("updates_channel_stable")).tag(UpdateChannel.stable.rawValue)
+                Text(l("updates_channel_rc")).tag(UpdateChannel.releaseCandidate.rawValue)
+            }
+            .labelsHidden()
+            .fixedSize()
+        }
+        if config.updateChannel == .releaseCandidate {
+            Text(l("updates_channel_rc_hint"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
         HStack(spacing: Theme.Spacing.s) {
             Button(l("updates_check_now")) { updates.checkNow() }
                 .buttonStyle(.bordered)
@@ -245,6 +275,8 @@ struct SettingsView: View {
             Button(l("updates_install", version)) { updates.install() }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
+            Link(l("updates_release_notes"), destination: UpdateController.releasesURL)
+                .font(.caption)
         }
     }
 

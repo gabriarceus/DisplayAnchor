@@ -19,7 +19,7 @@ Start with the owner of the behavior you need to change.
 | Restore policy          | LayoutStore.swift                                          | Current state, saved-layout selection, save/restore actions, live edits, and temporary pause |
 | Persistence             | ProfileStore.swift                                         | Versioned profile document, atomic writes, and storage issues                                |
 | Editor logic            | LayoutEditing.swift                                        | Draft conversion, edge snapping, and overlap resolution                                      |
-| Updates                 | UpdateController.swift                                     | Sparkle lifecycle, silent checks, pending state, and install hand-off                        |
+| Updates                 | UpdateController.swift, UpdateChannel.swift, CompactUpdateUserDriver.swift | Sparkle lifecycle, channel filtering, silent checks, compact confirmation, and standard installation progress |
 | Logging                 | Log.swift                                                  | Unified log categories for restore, engine, monitor, UI, updates, and profiles               |
 | Panel navigation        | Views/PanelRootView.swift                                  | Navigation between the main panel, settings, and editor; appearance and tint                 |
 | Main panel              | Views/PopoverView.swift, Views/ProfileRowView.swift        | Current-layout summary and saved-layout actions                                              |
@@ -116,8 +116,7 @@ are `io.github.gabriarceus.DisplayAnchor`.
 ## Platform and product constraints
 
 - The app is an accessory app with a menu bar panel and no Dock icon.
-- The macOS deployment floor comes from the Liquid Glass UI. Display APIs are older;
-  lowering the target also requires checking the UI and shared package.
+- The app targets macOS 26 in Package.swift and Info.plist. MenuBarKit also supports older macOS versions; lowering the app target is a separate compatibility change that requires checking its source and runtime behavior.
 - Display configuration writes require a non-sandboxed app. This rules out the
   current design's distribution through the Mac App Store.
 - Ad-hoc signing is the baseline; a paid Apple Developer ID is not required.

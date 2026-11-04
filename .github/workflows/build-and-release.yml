@@ -12,8 +12,8 @@ on:
         default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -26,6 +26,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Test channel feed publication
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
 
       - name: Build DisplayAnchor.app
         run: |
@@ -52,8 +55,8 @@ jobs:
           path: build/DisplayAnchor.zip
           if-no-files-found: error
 
-      # Sparkle reads this feed, not the GitHub API: the enclosure has to carry an
-      # EdDSA signature, and the download URL has to point at this release's asset.
+      # Keep the per-release appcast for older clients; its signed archive item
+      # is also merged into the channel feed after the assets are published.
       - name: Generate signed appcast
         if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
         env:
@@ -64,8 +67,11 @@ jobs:
           [[ -n "$GENERATE_APPCAST" ]] || { echo "generate_appcast not found — did the Sparkle dependency resolve?" >&2; exit 1; }
           mkdir -p appcast
           cp "build/${ZIP_NAME}" appcast/
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
+          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "appcast/${ZIP_NAME%.zip}.txt"
           echo "$SPARKLE_PRIVATE_KEY" | "$GENERATE_APPCAST" \
             --ed-key-file - \
+            --embed-release-notes \
             --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${TAG}/" \
             --link "https://github.com/${{ github.repository }}" \
             -o appcast/appcast.xml \
@@ -79,7 +85,16 @@ jobs:
           # Derived from Info.plist rather than the ref, so a manual dispatch tags
           # the same version the appcast's download URL points at.
           tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ contains(env.TAG, '-') }}
           files: |
             build/${{ env.ZIP_NAME }}
             appcast/appcast.xml
           generate_release_notes: true
+
+      - name: Publish channel appcast
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        run: |
+          git config user.name "$(git log -1 --format=%an)"
+          git config user.email "$(git log -1 --format=%ae)"
+          bash scripts/publish_appcast.sh appcast/appcast.xml
