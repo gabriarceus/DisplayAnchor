@@ -116,8 +116,7 @@ are `io.github.gabriarceus.DisplayAnchor`.
 ## Platform and product constraints
 
 - The app is an accessory app with a menu bar panel and no Dock icon.
-- The macOS deployment floor comes from the Liquid Glass UI. Display APIs are older;
-  lowering the target also requires checking the UI and shared package.
+- The app targets macOS 26 in Package.swift and Info.plist. MenuBarKit also supports older macOS versions; lowering the app target is a separate compatibility change that requires checking its source and runtime behavior.
 - Display configuration writes require a non-sandboxed app. This rules out the
   current design's distribution through the Mac App Store.
 - Ad-hoc signing is the baseline; a paid Apple Developer ID is not required.

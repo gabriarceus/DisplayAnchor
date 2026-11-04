@@ -6,8 +6,7 @@ saved arrangement. Restoring can be manual or automatic.
 
 ## Requirements and installation
 
-The app requires macOS 26 or later. Pre-built releases are Universal Binaries for
-Apple Silicon and Intel Macs. The deployment floor comes from the Liquid Glass UI.
+The app requires macOS 26 or later. Pre-built releases are Universal Binaries for Apple Silicon and Intel Macs.
 
 Download the versioned zip from the
 [latest release](https://github.com/gabriarceus/DisplayAnchor/releases/latest), unzip
