@@ -3,6 +3,39 @@
     <channel>
         <title>DisplayAnchor</title>
         <item>
+            <title>1.1.0</title>
+            <pubDate>Wed, 04 Nov 2026 22:09:38 +0000</pubDate>
+            <link>https://github.com/gabriarceus/DisplayAnchor</link>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="plain-text">Added
+
+• In-app updates through Sparkle, with signed downloads, installation, and relaunch.
+• Menu bar update indicator and a notification shown once per available version.
+• Settings footer with the running version and a link to the project on GitHub.
+• Update channel selection: Stable by default, with an opt-in for release candidates.
+
+Changed
+
+• Install replaces the manual Download link, with a compact confirmation and a scrollable changelog when release notes are available.
+• Raised the minimum MenuBarKit version to 1.2.0.
+• Release tooling publishes a shared Stable/RC appcast, preserves archive signatures, and rejects reused build numbers. Candidate releases are marked as prereleases.
+• Shortened the README and moved usage, architecture, development, and release guidance into dedicated documents.
+• Update checks run silently at launch and every six hours. Manual checks remain available when automatic checks are disabled.
+
+Fixed
+
+• Switching update channels during an active session waits for completion and checks the latest selection without getting stuck on Checking.
+• Up-to-date checks no longer show a failed result after Sparkle completes the check.
+
+Removed
+
+• Custom GitHub release polling and the outdated Gatekeeper hint in update settings.
+</description>
+            <enclosure url="https://github.com/gabriarceus/DisplayAnchor/releases/download/v1.1.0/DisplayAnchor-1.1.0.zip" length="4068833" type="application/octet-stream" sparkle:edSignature="kOjmqAirc/JnU2goTOZjVT3G2mNYSHkg00Dqxs6lcG9Tz8Zgugl6M541DKm+tW/yZ7diWZNR4It/l3QKI0sQDw==" />
+        </item>
+        <item>
             <title>1.1.0-rc3</title>
             <pubDate>Fri, 30 Oct 2026 10:51:56 +0000</pubDate>
             <link>https://github.com/gabriarceus/DisplayAnchor</link>
