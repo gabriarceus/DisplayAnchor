@@ -47,7 +47,9 @@ APPCAST_DIR="build/appcast"
 rm -rf "$APPCAST_DIR"
 mkdir -p "$APPCAST_DIR"
 cp "$ZIP" "$APPCAST_DIR/"
+python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "$APPCAST_DIR/DisplayAnchor-$VERSION.txt"
 "$GENERATE_APPCAST" \
+	--embed-release-notes \
 	--download-url-prefix "https://github.com/$REPOSITORY/releases/download/$TAG/" \
 	--link "https://github.com/$REPOSITORY" \
 	-o "$APPCAST_DIR/appcast.xml" \

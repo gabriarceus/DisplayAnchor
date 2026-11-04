@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update installation starts with a compact Install/Cancel confirmation; release notes are linked from Settings and Sparkle keeps its standard progress and installation UI.
+- Update installation starts with a compact Install/Cancel confirmation and a scrollable changelog when release notes are available. Release notes are extracted from this changelog and embedded in each appcast; Sparkle keeps its standard progress and installation UI.
 - Stable and RC updates share a channel-filtered appcast on the `updates` branch. Release publication preserves the latest signed archive item for each channel and publishes the feed after the release assets are available.
 - `release.sh` refuses to publish a release whose `CFBundleVersion` was not bumped, since that is the value Sparkle compares. Both publication paths target the built commit and mark candidate versions as prereleases.
 - Raised the minimum MenuBarKit version to 1.2.0, retaining the sibling-checkout workflow for local development.

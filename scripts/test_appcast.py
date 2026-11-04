@@ -7,6 +7,7 @@ import unittest
 import xml.etree.ElementTree as ET
 
 from merge_appcast import SPARKLE, merge_appcasts
+from release_notes import release_notes
 
 
 def feed(version, build, signature="archive-signature"):
@@ -24,6 +25,15 @@ def feed(version, build, signature="archive-signature"):
 
 
 class MergeAppcastTests(unittest.TestCase):
+    def test_embedded_notes_survive_channel_publication(self):
+        candidate = feed("1.1.0-rc4", 6)
+        notes = ET.SubElement(candidate.find("./channel/item"), "description", {f"{{{SPARKLE}}}format": "plain-text"})
+        notes.text = "Added\n\n• Changelog in the update alert."
+        merged = merge_appcasts(candidate, feed("1.1.0", 5))
+        published = merged.find("./channel/item/description")
+        self.assertEqual(published.text, notes.text)
+        self.assertEqual(published.attrib, notes.attrib)
+
     def test_rc_is_opt_in_and_stable_archive_signature_is_preserved(self):
         stable = feed("1.1.0", 7)
         candidate = feed("1.2.0-rc1", 8)
@@ -110,6 +120,20 @@ class PublishAppcastTests(unittest.TestCase):
             self.assertEqual(git("--git-dir", str(remote), "ls-tree", "--name-only", "updates"), "appcast.xml")
             root = ET.fromstring(git("--git-dir", str(remote), "show", "updates:appcast.xml"))
             self.assertEqual(len(root.findall("./channel/item")), 2)
+
+
+class ReleaseNotesTests(unittest.TestCase):
+    def test_exact_version_wins_over_unreleased_and_other_versions(self):
+        changelog = "# Changelog\n\n## [Unreleased]\n\n- Future work\n\n## [1.1.0-rc4]\n\n### Added\n\n- Show **release notes** with [Sparkle](https://sparkle-project.org).\n\n## [1.0.0]\n\n- Old work\n"
+        self.assertEqual(release_notes(changelog, "1.1.0-rc4"), "Added\n\n• Show release notes with Sparkle.\n")
+
+    def test_unreleased_is_used_before_a_version_section_is_created(self):
+        self.assertEqual(release_notes("## [Unreleased]\n\n- New `controls`\n\n## [1.0.0]\n\n- Old work", "1.1.0-rc4"), "• New controls\n")
+
+    def test_empty_or_missing_notes_fail_instead_of_publishing_an_empty_alert(self):
+        for changelog in ("# Changelog", "## [Unreleased]\n\n## [1.0.0]\n\n- Old work"):
+            with self.assertRaises(ValueError):
+                release_notes(changelog, "1.1.0-rc4")
 
 
 if __name__ == "__main__":

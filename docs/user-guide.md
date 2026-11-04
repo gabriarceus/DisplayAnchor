@@ -90,7 +90,7 @@ Layouts and settings stay on your Mac. Their storage locations are documented in
 The app integrates Sparkle to check for and install updates. When a newer version is
 available, a dot appears next to the menu bar icon and on the settings gear, and a
 notification appears once per version. Choose Install in Settings → Updates to enter
-a compact Install/Cancel confirmation, followed by Sparkle's download, verification, installation, and relaunch flow. Release notes open from a link in Settings. The running version is shown in the Settings footer.
+a compact Install/Cancel confirmation, followed by Sparkle's download, verification, installation, and relaunch flow. When the release includes notes, the confirmation shows its changelog in a scrollable area. Notes are in English; labels and buttons follow the app language. The link in Settings opens the full release history. The running version is shown in the Settings footer.
 
 Automatic checks run at launch and every six hours without opening an update window.
 You can disable them and still check manually. Update archives are verified against

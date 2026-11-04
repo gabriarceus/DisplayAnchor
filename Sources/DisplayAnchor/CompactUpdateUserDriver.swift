@@ -32,7 +32,9 @@ final class CompactUpdateUserDriver: NSObject, SPUUserDriver {
         if state.userInitiated { showUpdateInFocus() }
     }
 
-    func confirmationAlert(version: String, stage: SPUUserUpdateStage) -> NSAlert {
+    func confirmationAlert(version: String, stage: SPUUserUpdateStage, releaseNotes: String? = nil)
+        -> NSAlert
+    {
         let alert = NSAlert()
         alert.messageText = config.l("updates_confirm_title", version)
         switch stage {
@@ -45,7 +47,52 @@ final class CompactUpdateUserDriver: NSObject, SPUUserDriver {
         }
         alert.addButton(withTitle: config.l("updates_confirm_install"))
         alert.addButton(withTitle: config.l("updates_confirm_cancel"))
+        if let notes = releaseNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty
+        {
+            alert.accessoryView = releaseNotesView(notes)
+        }
         return alert
+    }
+
+    private func releaseNotesView(_ notes: String) -> NSView {
+        let width: CGFloat = 340
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: width, height: 0))
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+        textView.textColor = .labelColor
+        textView.backgroundColor = .textBackgroundColor
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+        textView.isVerticallyResizable = true
+        textView.textContainer?.containerSize = NSSize(
+            width: width - 16, height: .greatestFiniteMagnitude)
+        textView.string = notes
+        if let container = textView.textContainer, let layout = textView.layoutManager {
+            layout.ensureLayout(for: container)
+            textView.setFrameSize(
+                NSSize(width: width, height: ceil(layout.usedRect(for: container).height) + 16))
+        }
+
+        let scrollView = NSScrollView(
+            frame: NSRect(x: 0, y: 0, width: width, height: min(180, textView.frame.height)))
+        scrollView.borderType = .bezelBorder
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.documentView = textView
+        let title = NSTextField(labelWithString: config.l("updates_whats_new"))
+        title.font = .boldSystemFont(ofSize: NSFont.smallSystemFontSize)
+        let stack = NSStackView(views: [title, scrollView])
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        stack.frame = NSRect(
+            x: 0, y: 0, width: width,
+            height: title.intrinsicContentSize.height + 8 + scrollView.frame.height)
+        NSLayoutConstraint.activate([
+            scrollView.widthAnchor.constraint(equalToConstant: width),
+            scrollView.heightAnchor.constraint(equalToConstant: scrollView.frame.height),
+        ])
+        return stack
     }
 
     func showUpdateInFocus() {
@@ -66,7 +113,9 @@ final class CompactUpdateUserDriver: NSObject, SPUUserDriver {
             standard.showUpdateInFocus()
             return
         }
-        let prompt = confirmationAlert(version: item.displayVersionString, stage: state.stage)
+        let prompt = confirmationAlert(
+            version: item.displayVersionString, stage: state.stage,
+            releaseNotes: item.itemDescriptionFormat == "plain-text" ? item.itemDescription : nil)
         alert = prompt
         NSApp.activate(ignoringOtherApps: true)
         let response = prompt.runModal()

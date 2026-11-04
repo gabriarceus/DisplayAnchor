@@ -67,8 +67,11 @@ jobs:
           [[ -n "$GENERATE_APPCAST" ]] || { echo "generate_appcast not found — did the Sparkle dependency resolve?" >&2; exit 1; }
           mkdir -p appcast
           cp "build/${ZIP_NAME}" appcast/
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
+          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "appcast/${ZIP_NAME%.zip}.txt"
           echo "$SPARKLE_PRIVATE_KEY" | "$GENERATE_APPCAST" \
             --ed-key-file - \
+            --embed-release-notes \
             --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${TAG}/" \
             --link "https://github.com/${{ github.repository }}" \
             -o appcast/appcast.xml \

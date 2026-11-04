@@ -29,7 +29,9 @@ the menu bar indicator, settings indicator, and a notification announce an updat
 Notifications are deduplicated by version. A failed check preserves a known pending
 update rather than removing its reminder.
 
-CompactUpdateUserDriver supplies a compact Install/Cancel confirmation and keeps scheduled update offers silent. Sparkle’s standard user driver handles download progress, extraction, errors, installation, and relaunch. Release notes are linked from Settings instead of embedded in the confirmation. Informational and major-upgrade notices keep Sparkle’s standard presentation when the user opens them.
+CompactUpdateUserDriver supplies a compact Install/Cancel confirmation and keeps scheduled update offers silent. The confirmation shows embedded plain-text release notes in a selectable, scrollable area with a bounded height. Missing or empty notes add no space. Sparkle’s standard user driver handles download progress, extraction, errors, installation, and relaunch. The link in Settings still opens the full release history. Informational and major-upgrade notices keep Sparkle’s standard presentation when the user opens them.
+
+Both release paths use [release_notes.py](../scripts/release_notes.py) to extract the matching version section from CHANGELOG.md, or Unreleased when the version has no section yet. The script removes Markdown presentation syntax and writes the plain-text companion file used by Sparkle’s appcast generator. The generator embeds those notes directly in the per-release feed, and the shared-feed merge preserves them. Empty or missing changelog sections stop release preparation. Notes follow the changelog's English language; confirmation labels follow the app's selected language. No separate notes download is needed.
 
 Automatic updates are disabled through SUAllowsAutomaticUpdates. The automatic-check toggle controls discovery only; download and installation start after the user chooses Install. This also prevents an automatic-install preference left by the older standard alert from bypassing the compact confirmation.
 

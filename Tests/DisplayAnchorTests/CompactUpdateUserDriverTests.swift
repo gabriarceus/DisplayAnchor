@@ -48,6 +48,41 @@ struct CompactUpdateUserDriverTests {
         driver.dismissPendingUpdate()
         #expect(replies == [.dismiss])
     }
+
+    @Test(arguments: ["en", "it"])
+    func releaseNotesStayReadableWithinABoundedArea(language: String) throws {
+        _ = NSApplication.shared
+        let name = "CompactUpdateUserDriverTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defer { defaults.removePersistentDomain(forName: name) }
+        let config = AppConfig(defaults: defaults)
+        config.appLanguageRaw = language
+        let driver = CompactUpdateUserDriver(config: config, mayPresentUpdate: { true })
+        let notes = String(
+            repeating: "• Save and restore display layouts with clearer update controls.\n",
+            count: 30)
+        let alert = driver.confirmationAlert(
+            version: "1.1.0-rc4", stage: .notDownloaded, releaseNotes: notes)
+        alert.layout()
+
+        let stack = try #require(alert.accessoryView as? NSStackView)
+        let scroll = try #require(stack.arrangedSubviews.last as? NSScrollView)
+        let text = try #require(scroll.documentView as? NSTextView)
+        #expect(text.string == notes.trimmingCharacters(in: .whitespacesAndNewlines))
+        #expect(text.isEditable == false)
+        #expect(text.frame.height > scroll.frame.height)
+        #expect(scroll.frame.height <= 180)
+        #expect(alert.window.frame.width < 550)
+        #expect(alert.window.frame.height < 550)
+
+    }
+
+    @Test func emptyNotesDoNotAddBlankSpace() {
+        let driver = CompactUpdateUserDriver(config: AppConfig(), mayPresentUpdate: { true })
+        let alert = driver.confirmationAlert(
+            version: "1.1.0", stage: .notDownloaded, releaseNotes: " \n ")
+        #expect(alert.accessoryView == nil)
+    }
 }
 
 private final class ScheduledUpdateDecoder: NSCoder {
