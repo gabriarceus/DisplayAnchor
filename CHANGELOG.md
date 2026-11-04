@@ -7,34 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-04
+
 ### Added
 
-- Update channel selection in Settings: Stable by default, with an opt-in for stable releases and release candidates.
-- Dot next to the menu bar icon while an update is pending.
-- In-app updates through [Sparkle](https://github.com/sparkle-project/Sparkle): a new version is downloaded, verified against an EdDSA signature and installed from within the app, replacing the manual download-and-drag routine. Local and CI archive signatures are verified, and the maintainer confirmed an installed candidate-to-candidate update.
-- Notification when a check finds a new version, posted once per version.
-- Releases carry a per-release `appcast.xml` with the archive signature for compatibility with older updater-enabled builds.
-- Status footer in Settings with the running version and a link to the project on GitHub.
+- In-app updates through [Sparkle](https://github.com/sparkle-project/Sparkle), with signed downloads, installation, and relaunch.
+- Menu bar update indicator and a notification shown once per available version.
+- Settings footer with the running version and a link to the project on GitHub.
+- Update channel selection: Stable by default, with an opt-in for release candidates.
 
 ### Changed
 
-- Update installation starts with a compact Install/Cancel confirmation and a scrollable changelog when release notes are available. Release notes are extracted from this changelog and embedded in each appcast; Sparkle keeps its standard progress and installation UI.
-- Stable and RC updates share a channel-filtered appcast on the `updates` branch. Release publication preserves the latest signed archive item for each channel and publishes the feed after the release assets are available.
-- `release.sh` refuses to publish a release whose `CFBundleVersion` was not bumped, since that is the value Sparkle compares. Both publication paths target the built commit and mark candidate versions as prereleases.
-- Raised the minimum MenuBarKit version to 1.2.0, retaining the sibling-checkout workflow for local development.
-- Settings → Updates no longer repeats the running version, which moved to the footer.
-- Settings → Updates offers **Install** in place of the **Download** button that opened the release page.
-- Shortened the README to a project overview and moved usage, architecture, development, and release guidance into dedicated documents, with an agent context entry point.
-- Update checks run on Sparkle's schedule — at launch and every 6 hours — instead of a hand-rolled poll of the GitHub API at launch and on panel open. Sparkle never opens a window on its own: the menu bar dot and the notification are the reminder.
+- Update checks run silently at launch and every six hours. Manual checks remain available when automatic checks are disabled.
+- Install replaces the manual Download link, with a compact confirmation and a scrollable changelog when release notes are available.
+- Raised the minimum MenuBarKit version to 1.2.0.
+- Release tooling publishes a shared Stable/RC appcast, preserves archive signatures, and rejects reused build numbers. Candidate releases are marked as prereleases.
+- Shortened the README and moved usage, architecture, development, and release guidance into dedicated documents.
 
 ### Removed
 
-- The Gatekeeper hint under the update button. It described the manual download Sparkle replaces, and its advice (right-click → Open) no longer works on the macOS versions this app supports.
-- The hand-written GitHub Releases poll and its version parsing, superseded by Sparkle's feed.
+- Custom GitHub release polling and the outdated Gatekeeper hint in update settings.
 
 ### Fixed
 
-- Update checks keep the up-to-date result when Sparkle completes with its no-update error code, rather than showing a failed check.
+- Up-to-date checks no longer show a failed result after Sparkle completes the check.
+- Switching update channels during an active session waits for completion and checks the latest selection without getting stuck on Checking.
 
 ## [1.0.1] - 2026-08-20
 

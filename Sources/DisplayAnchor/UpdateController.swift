@@ -36,8 +36,9 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
     private var updater: SPUUpdater?
     private var needsChannelCheck = false
 
-    init(config: AppConfig) {
+    init(config: AppConfig, updater: SPUUpdater? = nil) {
         self.config = config
+        self.updater = updater
         currentVersion =
             Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
             ?? "0.0.0"
@@ -52,7 +53,10 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     /// Whether a check can be started. False while a session is running and
     /// outside a bundle, where there is no updater at all.
-    var canCheck: Bool { updater?.canCheckForUpdates ?? false }
+    var canCheck: Bool {
+        guard let updater else { return false }
+        return updater.canCheckForUpdates && !updater.sessionInProgress
+    }
 
     /// Builds the updater — deferred out of `init` so it can be its own delegate
     /// — starts Sparkle's scheduled cycle, and probes the feed once so a pending
@@ -116,7 +120,7 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
     }
 
     private func checkSelectedChannelIfPossible() {
-        guard needsChannelCheck, updater?.canCheckForUpdates == true else { return }
+        guard needsChannelCheck, canCheck else { return }
         needsChannelCheck = false
         probe(manual: true)
     }
@@ -146,7 +150,7 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
     /// callbacks below. A background probe leaves [status] alone until it has an
     /// answer, so a pending update does not flicker away while re-checking.
     private func probe(manual: Bool) {
-        guard let updater, updater.canCheckForUpdates else { return }
+        guard let updater, canCheck else { return }
         guard manual || config.checkForUpdates else { return }
         if manual { status = .checking }
         updater.checkForUpdateInformation()

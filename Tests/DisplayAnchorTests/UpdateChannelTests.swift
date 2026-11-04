@@ -66,4 +66,76 @@ struct UpdateChannelTests {
         #expect(controller.allowedChannels(for: updater).isEmpty)
         #expect(controller.availableVersion == nil)
     }
+
+    @Test func channelCheckWaitsWhenSparkleAllowsUserChecksDuringAnActiveSession() {
+        let updater = SessionUpdater()
+        let controller = UpdateController(config: AppConfig(), updater: updater)
+        updater.hasActiveSession = true
+
+        controller.updateChannelChanged()
+        controller.checkNow()
+
+        #expect(updater.canCheckForUpdates)
+        #expect(!controller.canCheck)
+        #expect(updater.probeAttempts == 0)
+        #expect(controller.status == .idle)
+    }
+
+    @Test func queuedChannelCheckRunsAfterTheActiveSessionFinishes() async {
+        let name = "UpdateChannelTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defer { defaults.removePersistentDomain(forName: name) }
+        let config = AppConfig(defaults: defaults)
+        let updater = SessionUpdater()
+        let controller = UpdateController(config: config, updater: updater)
+        updater.hasActiveSession = true
+
+        config.updateChannelRaw = UpdateChannel.releaseCandidate.rawValue
+        controller.updateChannelChanged()
+        config.updateChannelRaw = UpdateChannel.stable.rawValue
+        controller.updateChannelChanged()
+        let noUpdate = NSError(
+            domain: SUSparkleErrorDomain, code: Int(SUError.noUpdateError.rawValue))
+        controller.updaterDidNotFindUpdate(updater, error: noUpdate)
+        #expect(controller.status == .idle)
+        #expect(updater.probeAttempts == 0)
+
+        updater.hasActiveSession = false
+        await withCheckedContinuation { continuation in
+            updater.onProbe = { continuation.resume() }
+            controller.updater(updater, didFinishUpdateCycleFor: .updatesInBackground, error: nil)
+        }
+
+        #expect(updater.probeAttempts == 1)
+        #expect(controller.allowedChannels(for: updater).isEmpty)
+        #expect(controller.status == .checking)
+        controller.updaterDidNotFindUpdate(updater, error: noUpdate)
+        #expect(controller.status == .upToDate)
+    }
+}
+
+@MainActor
+private final class SessionUpdater: SPUUpdater {
+    var hasActiveSession = false
+    private(set) var probeAttempts = 0
+    var onProbe: (() -> Void)?
+
+    override var canCheckForUpdates: Bool { true }
+    override var sessionInProgress: Bool { hasActiveSession }
+
+    init() {
+        super.init(
+            hostBundle: .main,
+            applicationBundle: .main,
+            userDriver: SPUStandardUserDriver(hostBundle: .main, delegate: nil),
+            delegate: nil)
+    }
+
+    override func checkForUpdateInformation() {
+        probeAttempts += 1
+        guard !hasActiveSession else { return }
+        let callback = onProbe
+        onProbe = nil
+        callback?()
+    }
 }
