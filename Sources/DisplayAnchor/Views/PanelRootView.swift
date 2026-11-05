@@ -1,3 +1,4 @@
+import Combine
 import MenuBarKit
 import SwiftUI
 
@@ -15,14 +16,18 @@ struct PanelRootView: View {
     @ObservedObject var config: AppConfig
     @ObservedObject var navigation: PanelNavigation<PanelScreen>
     @ObservedObject var updates: UpdateController
+    /// Whether the panel is on screen. The hosting window keeps this view alive while hidden.
+    let isPresented: AnyPublisher<Bool, Never>
     @StateObject private var systemAccent = SystemAccentObserver()
+    @State private var isPanelPresented = false
 
     var body: some View {
         PanelChrome(tint: glassTint) {
-            content.hoverTipHost()
+            content.panelHelpHost(isActive: isPanelPresented)
                 .environment(\.localizer, config.localizer)
                 .environment(\.locale, config.appLanguage.map(Locale.init(identifier:)) ?? .current)
         }
+        .onReceive(isPresented) { isPanelPresented = $0 }
     }
 
     private var glassTint: Color? {

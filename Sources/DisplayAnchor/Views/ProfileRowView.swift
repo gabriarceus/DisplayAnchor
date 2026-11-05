@@ -1,3 +1,4 @@
+import AppKit
 import MenuBarKit
 import SwiftUI
 
@@ -19,6 +20,7 @@ struct ProfileRowView: View {
     @State private var confirmingDelete = false
     @State private var confirmDeleteTask: Task<Void, Never>?
     @FocusState private var renameFieldFocused: Bool
+    @State private var outsideClickMonitor: Any?
 
     var body: some View {
         HStack(spacing: 8) {
@@ -33,6 +35,7 @@ struct ProfileRowView: View {
                         .font(.caption)
                         .focused($renameFieldFocused)
                         .onSubmit(commitRename)
+                        .onExitCommand(perform: cancelRename)
                         .onChange(of: renameFieldFocused) { _, focused in
                             if !focused { commitRename() }
                         }
@@ -41,7 +44,7 @@ struct ProfileRowView: View {
                         .font(.subheadline)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .hoverTip(l("profile_rename_hint"))
+                        .panelHelp(l("profile_rename_hint"))
                         .onTapGesture(count: 2, perform: startRenaming)
                 }
                 Text(
@@ -71,35 +74,60 @@ struct ProfileRowView: View {
                 Button(action: confirmDelete) {
                     Image(systemName: "checkmark")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .foregroundStyle(.red)
-                .hoverTip(l("profile_confirm_delete_hint"))
+                .accessibilityLabel(l("profile_confirm_delete_hint"))
+                .panelHelp(l("profile_confirm_delete_hint"))
                 Button(action: cancelDeleteConfirmation) {
                     Image(systemName: "xmark")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .hoverTip(l("profile_keep_hint"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(l("profile_keep_hint"))
+                .panelHelp(l("profile_keep_hint"))
             } else {
                 Button(action: startDeleteConfirmation) {
                     Image(systemName: "trash")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .hoverTip(l("profile_delete_hint"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(l("profile_delete_hint"))
+                .panelHelp(l("profile_delete_hint"))
             }
         }
         .padding(.vertical, 2)
+        .onDisappear(perform: stopOutsideClickMonitor)
     }
 
     private func startRenaming() {
         draftLabel = profile.label
         isRenaming = true
         renameFieldFocused = true
+        // The panel stays key and clicks on plain SwiftUI content take no focus, so
+        // the field would keep editing until Return or Escape without this monitor.
+        outsideClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+            let hit = event.window?.contentView?.hitTest(event.locationInWindow)
+            if !(hit is NSText || hit is NSTextField) {
+                MainActor.assumeIsolated { commitRename() }
+            }
+            return event
+        }
+    }
+
+    private func stopOutsideClickMonitor() {
+        if let outsideClickMonitor { NSEvent.removeMonitor(outsideClickMonitor) }
+        outsideClickMonitor = nil
+    }
+
+    private func cancelRename() {
+        stopOutsideClickMonitor()
+        isRenaming = false
     }
 
     private func commitRename() {
         guard isRenaming else { return }
+        stopOutsideClickMonitor()
         isRenaming = false
         let trimmed = draftLabel.trimmingCharacters(in: .whitespaces)
         if !trimmed.isEmpty, trimmed != profile.label { onRename(trimmed) }

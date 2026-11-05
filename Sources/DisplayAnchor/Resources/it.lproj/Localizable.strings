@@ -27,7 +27,11 @@
 "settings_launch_at_login" = "Avvia all’accesso";
 "settings_launch_hint_unbundled" = "Disponibile solo con l’app compilata (.app).";
 "settings_launch_hint_approval" = "Autorizzazione richiesta: attivala in Impostazioni di Sistema → Generali → Elementi login.";
+"settings_launch_hint_not_found" = "Avvio all’accesso non disponibile: macOS non trova questa app tra gli elementi login.";
+"settings_launch_hint_unsupported" = "Avvio all’accesso non disponibile: macOS riporta uno stato sconosciuto per l’elemento login.";
+"settings_launch_open_settings" = "Apri Elementi login";
 "settings_section_updates" = "Aggiornamenti";
+"settings_menubarkit_version" = "MenuBarKit %@";
 
 /* Updates */
 "updates_current_version" = "Versione attuale";
@@ -126,3 +130,12 @@
 "tint_green" = "Verde";
 "tint_graphite" = "Grafite";
 "tint_teal" = "Verde acqua";
+
+/* Edit menu */
+"menu_edit" = "Modifica";
+"menu_undo" = "Annulla";
+"menu_redo" = "Ripristina";
+"menu_cut" = "Taglia";
+"menu_copy" = "Copia";
+"menu_paste" = "Incolla";
+"menu_select_all" = "Seleziona tutto";

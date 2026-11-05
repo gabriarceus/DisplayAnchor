@@ -117,9 +117,10 @@ struct PopoverView: View {
                 Button(action: onEditLayout) {
                     Image(systemName: "rectangle.3.group")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .hoverTip(l("popover_edit_layout_hint"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(l("popover_edit_layout_hint"))
+                .panelHelp(l("popover_edit_layout_hint"))
             }
         }
     }
@@ -165,7 +166,7 @@ struct PopoverView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .hoverTip(l("popover_resume_hint", minutesRemaining(until: until)))
+                .panelHelp(l("popover_resume_hint", minutesRemaining(until: until)))
             } else {
                 let minutes = Int(LayoutStore.autoRestorePauseDuration / 60)
                 Button {
@@ -175,7 +176,7 @@ struct PopoverView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .hoverTip(l("popover_pause_hint", minutes))
+                .panelHelp(l("popover_pause_hint", minutes))
             }
         }
     }
@@ -217,7 +218,7 @@ struct PopoverView: View {
                     .lineLimit(1)
             }
             Spacer()
-            GlassIconButton(systemImage: "gearshape") {
+            GlassIconButton(systemImage: "gearshape", accessibilityLabel: l("common_settings")) {
                 onOpenSettings()
             }
             .overlay(alignment: .topTrailing) {
@@ -228,14 +229,14 @@ struct PopoverView: View {
                         .offset(x: 1, y: -1)
                 }
             }
-            .hoverTip(
+            .panelHelp(
                 availableUpdateVersion.map { l("updates_available", $0) } ?? l("common_settings")
             )
 
-            GlassIconButton(systemImage: "power") {
+            GlassIconButton(systemImage: "power", accessibilityLabel: l("common_quit")) {
                 NSApp.terminate(nil)
             }
-            .hoverTip(l("common_quit"))
+            .panelHelp(l("common_quit"))
         }
     }
 

@@ -41,19 +41,22 @@ struct LayoutEditorView: View {
             Text(l("editor_title")).font(.headline)
             Spacer()
             Button(action: onClose) {
-                Image(systemName: "xmark.circle")
+                Image(systemName: "xmark")
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .hoverTip(l("editor_cancel_hint"))
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .accessibilityLabel(l("editor_cancel_hint"))
+            .panelHelp(l("editor_cancel_hint"))
 
             Button(action: apply) {
-                Image(systemName: "checkmark.circle.fill")
+                Image(systemName: "checkmark")
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(hasChanges ? Color.green : Color.secondary)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .tint(.green)
             .disabled(!hasChanges)
-            .hoverTip(l("editor_apply_hint"))
+            .accessibilityLabel(l("editor_apply_hint"))
+            .panelHelp(l("editor_apply_hint"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

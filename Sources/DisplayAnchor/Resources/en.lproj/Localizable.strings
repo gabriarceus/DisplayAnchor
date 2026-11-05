@@ -27,7 +27,11 @@
 "settings_launch_at_login" = "Launch at login";
 "settings_launch_hint_unbundled" = "Available only when running the built .app bundle.";
 "settings_launch_hint_approval" = "Approval required: enable it in System Settings → General → Login Items.";
+"settings_launch_hint_not_found" = "Login launch is unavailable: macOS cannot find this app as a login item.";
+"settings_launch_hint_unsupported" = "Login launch is unavailable: macOS reports an unknown login item state.";
+"settings_launch_open_settings" = "Open Login Items";
 "settings_section_updates" = "Updates";
+"settings_menubarkit_version" = "MenuBarKit %@";
 
 /* Updates */
 "updates_current_version" = "Current version";
@@ -126,3 +130,12 @@
 "tint_green" = "Green";
 "tint_graphite" = "Graphite";
 "tint_teal" = "Teal";
+
+/* Edit menu */
+"menu_edit" = "Edit";
+"menu_undo" = "Undo";
+"menu_redo" = "Redo";
+"menu_cut" = "Cut";
+"menu_copy" = "Copy";
+"menu_paste" = "Paste";
+"menu_select_all" = "Select All";

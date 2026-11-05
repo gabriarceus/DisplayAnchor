@@ -25,10 +25,10 @@ Paths in this table are relative to [Sources/DisplayAnchor](../Sources/DisplayAn
 | Editor UI               | Views/LayoutEditorView.swift                                                        | Drag interaction and draft apply/cancel controls                                                           |
 | Diagnostics UI          | Views/DisplayDetailView.swift                                                       | Hardware details, copy action, and ambiguous-identity badge                                                |
 | Settings UI             | Views/SettingsView.swift                                                            | Preferences, launch at login, and update controls                                                          |
-| Small UI helpers        | Views/DisplayCountIcon.swift, Views/HoverTip.swift                                  | Display-count icon and hover tips                                                                          |
+| Small UI helpers        | Views/DisplayCountIcon.swift                                                        | Display-count icon                                                                                         |
 | Translations            | Resources/\*.lproj/Localizable.strings                                              | Bundled language tables                                                                                    |
 
-External dependencies are declared in [Package.swift](../Package.swift). [MenuBarKit](https://github.com/gabriarceus/MenuBarKit) owns reusable panel chrome, navigation, design tokens, controls, notifications, and localization. [Sparkle](https://github.com/sparkle-project/Sparkle) owns update feed handling, signature validation, download, installation, and relaunch.
+External dependencies are declared in [Package.swift](../Package.swift). [MenuBarKit](https://github.com/gabriarceus/MenuBarKit) owns reusable panel chrome, navigation, design tokens, controls, hover help, notifications, and localization, and the status item, panel placement, Edit menu, and login item helpers. [Sparkle](https://github.com/sparkle-project/Sparkle) owns update feed handling, signature validation, download, installation, and relaunch.
 
 ## Display identity and layout selection
 

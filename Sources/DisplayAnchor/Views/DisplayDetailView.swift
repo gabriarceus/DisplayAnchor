@@ -36,10 +36,9 @@ struct DisplayDetailView: View {
                         Image(systemName: "chevron.right")
                             .rotationEffect(.degrees(expanded ? 90 : 0))
                     }
-                    .font(.caption)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
 
                 Spacer()
 
@@ -55,11 +54,10 @@ struct DisplayDetailView: View {
                     copy(.all)
                 } label: {
                     Label(l("display_copy_all"), systemImage: "doc.on.doc")
-                        .font(.caption)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .hoverTip(l("display_copy_hint"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .panelHelp(l("display_copy_hint"))
             }
 
             if expanded {
@@ -96,11 +94,10 @@ struct DisplayDetailView: View {
                 copy(.display(key), display: display)
             } label: {
                 Label(l("display_copy"), systemImage: "doc.on.doc")
-                    .font(.caption)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .hoverTip(l("display_copy_one_hint"))
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .panelHelp(l("display_copy_one_hint"))
             .opacity(visible ? 1 : 0)
             .allowsHitTesting(visible)
         }

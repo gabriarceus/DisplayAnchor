@@ -56,7 +56,7 @@ struct DisplayMapView: View {
                 .padding(.vertical, 1)
                 .background(Capsule().fill(Color.secondary.opacity(0.15)))
                 .padding(2)
-                .hoverTip(l("display_rotated_hint", degrees))
+                .panelHelp(l("display_rotated_hint", degrees))
         }
     }
 

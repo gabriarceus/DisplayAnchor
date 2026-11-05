@@ -1,6 +1,5 @@
 import AppKit
 import MenuBarKit
-import ServiceManagement
 import SwiftUI
 
 /// Settings form. Toggles write through to UserDefaults immediately; the settle
@@ -17,10 +16,13 @@ struct SettingsView: View {
 
     static let settleRange = 1...60
 
-    @State private var launchAtLogin = false
-    @State private var launchAtLoginHint: String?
+    @StateObject private var loginItem = LoginItem()
+    @State private var loginItemError: String?
     @State private var formHeight: CGFloat?
     @FocusState private var settleFieldFocused: Bool
+
+    /// MenuBarKit revision that build.sh records in Info.plist; nil outside a bundle.
+    private let menuBarKitVersion = Bundle.main.object(forInfoDictionaryKey: "MenuBarKitVersion") as? String
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,12 +41,6 @@ struct SettingsView: View {
             .frame(height: formHeight.map { min($0, maxFormHeight) })
         }
         .frame(width: PopoverView.popoverWidth)
-        .onAppear {
-            launchAtLogin = LaunchAtLogin.isEnabled
-        }
-        .onChange(of: launchAtLogin) { _, enabled in
-            applyLaunchAtLogin(enabled)
-        }
         .onChange(of: config.notifyOnRestore) { _, enabled in
             if enabled { notifier.requestAuthorizationIfNeeded() }
         }
@@ -77,8 +73,8 @@ struct SettingsView: View {
         PanelHeader(
             title: l("common_settings"),
             leading: {
-                GlassIconButton(systemImage: "chevron.left", action: onBack)
-                    .hoverTip(l("common_back"))
+                GlassIconButton(systemImage: "chevron.left", accessibilityLabel: l("common_back"), action: onBack)
+                    .panelHelp(l("common_back"))
             }
         )
         .padding(.horizontal, Theme.Spacing.m)
@@ -196,7 +192,8 @@ struct SettingsView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .hoverTip(l("tint_\(tint.rawValue)"))
+        .accessibilityLabel(l("tint_\(tint.rawValue)"))
+        .panelHelp(l("tint_\(tint.rawValue)"))
     }
 
     @ViewBuilder
@@ -234,11 +231,40 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var generalSection: some View {
-        toggleRow(l("settings_launch_at_login"), isOn: $launchAtLogin)
-        if let hint = launchAtLoginHint {
-            Text(hint)
-                .font(.caption)
-                .foregroundStyle(.orange)
+        toggleRow(
+            l("settings_launch_at_login"),
+            isOn: Binding(get: { loginItem.status == .enabled }, set: { setLaunchAtLogin($0) })
+        )
+        .disabled(loginItemUnavailableReason != nil)
+        if let reason = loginItemUnavailableReason {
+            hint(loginItemUnavailableText(reason))
+        } else if loginItem.status == .requiresApproval {
+            hint(l("settings_launch_hint_approval"))
+            Button(l("settings_launch_open_settings")) { LoginItem.openSettings() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
+        if let loginItemError {
+            hint(loginItemError)
+        }
+    }
+
+    private func hint(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.orange)
+    }
+
+    private var loginItemUnavailableReason: LoginItemUnavailableReason? {
+        if case .unavailable(let reason) = loginItem.status { return reason }
+        return nil
+    }
+
+    private func loginItemUnavailableText(_ reason: LoginItemUnavailableReason) -> String {
+        switch reason {
+        case .notBundled: l("settings_launch_hint_unbundled")
+        case .serviceNotFound: l("settings_launch_hint_not_found")
+        case .unsupportedServiceStatus: l("settings_launch_hint_unsupported")
         }
     }
 
@@ -276,17 +302,23 @@ struct SettingsView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
             Link(l("updates_release_notes"), destination: UpdateController.releasesURL)
-                .font(.caption)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
         }
     }
 
-    /// Status note closing the form: the running version and a shortcut to the
-    /// project page. Deliberately outside the sections, so it reads as a footnote
-    /// rather than a setting.
+    /// Status note closing the form: the running app and MenuBarKit versions and a
+    /// shortcut to the project page. Deliberately outside the sections, so it reads
+    /// as a footnote rather than a setting.
     private var footer: some View {
-        HStack {
-            Text("\(l("updates_current_version")) \(updates.currentVersion)")
-                .monospacedDigit()
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(l("updates_current_version")) \(updates.currentVersion)")
+                if let menuBarKitVersion {
+                    Text(l("settings_menubarkit_version", menuBarKitVersion))
+                }
+            }
+            .monospacedDigit()
             Spacer()
             Link(destination: UpdateController.repositoryURL) {
                 HStack(spacing: 2) {
@@ -294,6 +326,8 @@ struct SettingsView: View {
                     Image(systemName: "arrow.up.right")
                 }
             }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -323,43 +357,14 @@ struct SettingsView: View {
         }
     }
 
-    private func applyLaunchAtLogin(_ enabled: Bool) {
-        guard LaunchAtLogin.isBundled else {
-            if enabled {
-                launchAtLoginHint = l("settings_launch_hint_unbundled")
-                launchAtLogin = false
-            }
-            return
-        }
-        guard enabled != LaunchAtLogin.isEnabled else { return }
+    private func setLaunchAtLogin(_ enabled: Bool) {
         do {
-            try LaunchAtLogin.set(enabled)
-            launchAtLoginHint =
-                SMAppService.mainApp.status == .requiresApproval
-                ? l("settings_launch_hint_approval")
-                : nil
+            try loginItem.setEnabled(enabled)
+            loginItemError = nil
+        } catch LoginItemError.unavailable(let reason) {
+            loginItemError = loginItemUnavailableText(reason)
         } catch {
-            launchAtLoginHint = error.localizedDescription
-            launchAtLogin = LaunchAtLogin.isEnabled
-        }
-    }
-}
-
-private enum LaunchAtLogin {
-    static var isBundled: Bool {
-        Bundle.main.bundleURL.pathExtension == "app"
-    }
-
-    static var isEnabled: Bool {
-        guard isBundled else { return false }
-        return SMAppService.mainApp.status == .enabled
-    }
-
-    static func set(_ enabled: Bool) throws {
-        if enabled {
-            try SMAppService.mainApp.register()
-        } else {
-            try SMAppService.mainApp.unregister()
+            loginItemError = error.localizedDescription
         }
     }
 }
