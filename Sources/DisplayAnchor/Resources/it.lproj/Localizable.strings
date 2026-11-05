@@ -80,6 +80,9 @@
 "display_main" = "principale";
 "display_count_one" = "%d schermo";
 "display_count_other" = "%d schermi";
+"display_indistinguishable" = "⚠︎ indistinguibile";
+"display_identity_line" = "modello %u · seriale %u · produttore %u · unità %u";
+"display_position_line" = "pos. (%d, %d) · %@";
 
 /* Editor */
 "editor_title" = "Modifica layout";
@@ -112,3 +115,14 @@
 "notification_rejected_body" = "macOS ha rifiutato il layout salvato “%@”.";
 "notification_update_title" = "Aggiornamento disponibile";
 "notification_update_body" = "DisplayAnchor %@ è disponibile. Apri DisplayAnchor per installarlo.";
+
+/* Tint */
+"tint_blue" = "Blu";
+"tint_purple" = "Viola";
+"tint_pink" = "Rosa";
+"tint_red" = "Rosso";
+"tint_orange" = "Arancione";
+"tint_yellow" = "Giallo";
+"tint_green" = "Verde";
+"tint_graphite" = "Grafite";
+"tint_teal" = "Verde acqua";

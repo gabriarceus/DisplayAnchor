@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Dates, display details, and tint names follow the selected language. The built-in display shows the system's name for it.
+- The release workflow is the only publication path. It runs the Swift tests and stops when the tag does not match Info.plist or the release already exists; release.sh now checks the version and pushes the tag.
+
+### Fixed
+
+- An unreadable saved-layouts file that cannot be backed up is no longer overwritten by the next save.
+- Rotating one of two same-model monitors with different serial numbers no longer rotates the other one.
+
+### Removed
+
+- Per-release appcast assets and the feed-override cleanup for release candidates 1 and 2.
+
 ## [1.1.0] - 2026-11-04
 
 ### Added

@@ -80,6 +80,9 @@
 "display_main" = "main";
 "display_count_one" = "%d display";
 "display_count_other" = "%d displays";
+"display_indistinguishable" = "⚠︎ indistinguishable";
+"display_identity_line" = "model %u · serial %u · vendor %u · unit %u";
+"display_position_line" = "pos (%d, %d) · %@";
 
 /* Editor */
 "editor_title" = "Edit layout";
@@ -112,3 +115,14 @@
 "notification_rejected_body" = "macOS rejected the saved “%@” layout.";
 "notification_update_title" = "Update available";
 "notification_update_body" = "DisplayAnchor %@ is available. Open DisplayAnchor to install it.";
+
+/* Tint */
+"tint_blue" = "Blue";
+"tint_purple" = "Purple";
+"tint_pink" = "Pink";
+"tint_red" = "Red";
+"tint_orange" = "Orange";
+"tint_yellow" = "Yellow";
+"tint_green" = "Green";
+"tint_graphite" = "Graphite";
+"tint_teal" = "Teal";

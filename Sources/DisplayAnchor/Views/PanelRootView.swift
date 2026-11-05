@@ -20,7 +20,9 @@ struct PanelRootView: View {
 
     var body: some View {
         PanelChrome(tint: glassTint) {
-            content.hoverTipHost().environment(\.localizer, config.localizer)
+            content.hoverTipHost()
+                .environment(\.localizer, config.localizer)
+                .environment(\.locale, config.appLanguage.map(Locale.init(identifier:)) ?? .current)
         }
     }
 

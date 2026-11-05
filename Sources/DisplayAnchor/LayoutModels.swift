@@ -18,7 +18,13 @@ struct StableDisplayID: Codable, Equatable, Sendable {
     var ambiguityOrdinal: Int
 
     /// EDID-stable key used for the display-set fingerprint.
-    var edidKey: String { "\(vendor):\(model):\(serial):\(isBuiltin)" }
+    var edidKey: String { Self.edidKey(vendor: vendor, model: model, serial: serial, isBuiltin: isBuiltin) }
+
+    /// The single format of the EDID key. Saved profiles are keyed by a hash of it,
+    /// so changing the format orphans every saved layout.
+    static func edidKey(vendor: UInt32, model: UInt32, serial: UInt32, isBuiltin: Bool) -> String {
+        "\(vendor):\(model):\(serial):\(isBuiltin)"
+    }
 
     /// Best available per-physical-display identity. The ColorSync UUID is derived
     /// from the full EDID and differs even between same-model units (whose numeric

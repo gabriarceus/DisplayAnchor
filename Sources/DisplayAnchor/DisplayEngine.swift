@@ -45,7 +45,12 @@ enum DisplayEngine {
 
     /// EDID-stable key for a live display (matches `StableDisplayID.edidKey`).
     private static func edidKey(_ id: CGDirectDisplayID) -> String {
-        "\(CGDisplayVendorNumber(id)):\(CGDisplayModelNumber(id)):\(CGDisplaySerialNumber(id)):\(CGDisplayIsBuiltin(id) != 0)"
+        StableDisplayID.edidKey(
+            vendor: CGDisplayVendorNumber(id),
+            model: CGDisplayModelNumber(id),
+            serial: CGDisplaySerialNumber(id),
+            isBuiltin: CGDisplayIsBuiltin(id) != 0
+        )
     }
 
     /// Assigns a stable ordinal within each identical-EDID group (port order,
@@ -75,19 +80,20 @@ enum DisplayEngine {
 
     /// Order-independent hash over the EDID-stable identity of a set of displays.
     static func fingerprint(for ids: [CGDirectDisplayID]) -> String {
-        let joined = ids.map(edidKey).sorted().joined(separator: "|")
-        let digest = SHA256.hash(data: Data(joined.utf8))
-        return digest.map { String(format: "%02x", Int($0)) }.joined()
+        fingerprint(edidKeys: ids.map(edidKey))
     }
 
-    static func currentFingerprint() -> String {
-        fingerprint(for: activeDisplayIDs())
+    /// Order-independent SHA-256 hex digest of `edidKeys`; duplicates count.
+    static func fingerprint(edidKeys: [String]) -> String {
+        let joined = edidKeys.sorted().joined(separator: "|")
+        let digest = SHA256.hash(data: Data(joined.utf8))
+        return digest.map { String(format: "%02x", Int($0)) }.joined()
     }
 
     // MARK: - Snapshot
 
     @MainActor
-    static func snapshotCurrentLayout(label: String = "", savedAt: Date = Date()) -> LayoutProfile {
+    static func snapshotCurrentLayout() -> LayoutProfile {
         let ids = activeDisplayIDs()
         let ordinals = ambiguityOrdinals(for: ids)
         let displays: [DisplaySnapshot] = ids.map { id in
@@ -111,8 +117,8 @@ enum DisplayEngine {
         }
         return LayoutProfile(
             fingerprint: fingerprint(for: ids),
-            label: label,
-            savedAt: savedAt,
+            label: "",
+            savedAt: Date(),
             displays: displays
         )
     }
@@ -128,9 +134,10 @@ enum DisplayEngine {
         )
     }
 
+    /// The system's localized name for the display, or `Display <id>` when no
+    /// screen backs it.
     @MainActor
     static func displayName(for id: CGDirectDisplayID) -> String {
-        if CGDisplayIsBuiltin(id) != 0 { return "Built-in Display" }
         let key = NSDeviceDescriptionKey("NSScreenNumber")
         for screen in NSScreen.screens {
             if let number = screen.deviceDescription[key] as? NSNumber, number.uint32Value == id {
@@ -281,13 +288,7 @@ enum DisplayEngine {
                 continue
             }
             // 2. EDID match (vendor/model/serial/builtin).
-            let candidateIndices = remaining.indices.filter { index in
-                let id = remaining[index]
-                return CGDisplayVendorNumber(id) == snapshot.stableID.vendor
-                    && CGDisplayModelNumber(id) == snapshot.stableID.model
-                    && CGDisplaySerialNumber(id) == snapshot.stableID.serial
-                    && (CGDisplayIsBuiltin(id) != 0) == snapshot.stableID.isBuiltin
-            }
+            let candidateIndices = remaining.indices.filter { edidKey(remaining[$0]) == snapshot.stableID.edidKey }
             guard !candidateIndices.isEmpty else {
                 Log.engine.notice("resolve: no live display matches saved '\(snapshot.name, privacy: .public)' edid=\(snapshot.stableID.edidKey, privacy: .public)")
                 return nil
@@ -346,12 +347,7 @@ enum DisplayEngine {
             return id
         }
         let ordinals = ambiguityOrdinals(for: liveIDs)
-        let candidates = liveIDs.filter { id in
-            CGDisplayVendorNumber(id) == snapshot.stableID.vendor
-                && CGDisplayModelNumber(id) == snapshot.stableID.model
-                && CGDisplaySerialNumber(id) == snapshot.stableID.serial
-                && (CGDisplayIsBuiltin(id) != 0) == snapshot.stableID.isBuiltin
-        }
+        let candidates = liveIDs.filter { edidKey($0) == snapshot.stableID.edidKey }
         if candidates.count == 1 { return candidates[0] }
         return candidates.first { (ordinals[$0] ?? 0) == snapshot.stableID.ambiguityOrdinal } ?? candidates.first
     }
@@ -440,13 +436,15 @@ enum DisplayEngine {
     }
 
     /// Resolves the `IODisplayConnect` node backing a display by matching its
-    /// vendor/product against the display's EDID numbers (the replacement for the
-    /// removed `CGDisplayIOServicePort`). The caller owns the returned service and
-    /// must `IOObjectRelease` it; returns 0 if not found. Identical twin displays
-    /// resolve to the first match — a best-effort tiebreak.
+    /// vendor, product, and serial against the display's EDID numbers (the
+    /// replacement for the removed `CGDisplayIOServicePort`). The caller owns the
+    /// returned service and must `IOObjectRelease` it; returns 0 if not found.
+    /// Displays with identical EDID numbers resolve to the first match — a
+    /// best-effort tiebreak.
     private static func ioService(for id: CGDirectDisplayID) -> io_service_t {
         let vendor = CGDisplayVendorNumber(id)
         let model = CGDisplayModelNumber(id)
+        let serial = CGDisplaySerialNumber(id)
         var iterator = io_iterator_t()
         guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IODisplayConnect"), &iterator) == KERN_SUCCESS else {
             return 0
@@ -458,7 +456,9 @@ enum DisplayEngine {
             if let info = IODisplayCreateInfoDictionary(service, IOOptionBits(kIODisplayOnlyPreferredName))?
                 .takeRetainedValue() as? [String: Any],
                (info["DisplayVendorID"] as? NSNumber)?.uint32Value == vendor,
-               (info["DisplayProductID"] as? NSNumber)?.uint32Value == model {
+               (info["DisplayProductID"] as? NSNumber)?.uint32Value == model,
+               // EDIDs without a serial omit the key; CoreGraphics reports them as 0.
+               ((info["DisplaySerialNumber"] as? NSNumber)?.uint32Value ?? 0) == serial {
                 return service
             }
             IOObjectRelease(service)

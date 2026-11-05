@@ -110,11 +110,6 @@ final class AppConfig: ObservableObject {
             Keys.checkForUpdates: true,
             Keys.updateChannel: UpdateChannel.stable.rawValue,
         ])
-        // Migrate the pre-mode tint value: "none" was a tint choice, now a mode.
-        if defaults.string(forKey: Keys.appTint) == "none" {
-            defaults.set(AppTintMode.none.rawValue, forKey: Keys.appTintMode)
-            defaults.removeObject(forKey: Keys.appTint)
-        }
         autoRestoreEnabled = defaults.bool(forKey: Keys.autoRestoreEnabled)
         notifyOnRestore = defaults.bool(forKey: Keys.notifyOnRestore)
         settleSeconds = defaults.integer(forKey: Keys.settleSeconds)

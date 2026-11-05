@@ -196,7 +196,7 @@ struct SettingsView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .help(tint.rawValue.capitalized)
+        .hoverTip(l("tint_\(tint.rawValue)"))
     }
 
     @ViewBuilder

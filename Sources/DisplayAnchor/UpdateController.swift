@@ -77,11 +77,6 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
             userDriver: userDriver,
             delegate: self
         )
-        if let legacyFeed = defaults.string(forKey: "SUFeedURL"),
-            legacyFeed.hasPrefix(Self.releasesURL.absoluteString + "/")
-        {
-            updater.clearFeedURLFromUserDefaults()
-        }
         updater.automaticallyChecksForUpdates = config.checkForUpdates
         do {
             try updater.start()

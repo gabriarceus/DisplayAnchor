@@ -26,7 +26,7 @@ struct LayoutEditorView: View {
             Divider()
             footer
         }
-        .frame(width: 340, height: 540)
+        .frame(width: PopoverView.popoverWidth, height: PopoverView.popoverHeight)
         .onAppear(perform: load)
         .onChange(of: store.currentFingerprint) { _, newValue in
             // The connected set changed — the draft is stale; bail out safely.

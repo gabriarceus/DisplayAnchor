@@ -69,13 +69,13 @@ struct DisplayDetailView: View {
         return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
                 Text(display.name).font(.caption).bold()
-                if display.isMain { tag("MAIN", .accentColor) }
-                if isAmbiguous { tag("⚠︎ indistinguishable", .orange) }
+                if display.isMain { tag(l("display_main").uppercased(), .accentColor) }
+                if isAmbiguous { tag(l("display_indistinguishable"), .orange) }
             }
             Text(geometryLine(display))
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
-            Text("model \(display.stableID.model) · serial \(display.stableID.serial) · vendor \(display.stableID.vendor) · unit \(display.stableID.unitNumber)")
+            Text(l("display_identity_line", display.stableID.model, display.stableID.serial, display.stableID.vendor, display.stableID.unitNumber))
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
             Text("uuid \(display.stableID.uuid ?? "—")")
@@ -96,7 +96,8 @@ struct DisplayDetailView: View {
     private func geometryLine(_ display: DisplaySnapshot) -> String {
         let hz = display.mode.refresh > 0 ? "\(Int(display.mode.refresh.rounded()))Hz" : "—"
         let hiDPI = display.mode.isHiDPI ? " · HiDPI" : ""
-        return "pos (\(display.originX), \(display.originY)) · \(display.mode.width)×\(display.mode.height) pt · \(display.mode.pixelWidth)×\(display.mode.pixelHeight) px\(hiDPI) · \(hz)"
+        let size = "\(display.mode.width)×\(display.mode.height) pt · \(display.mode.pixelWidth)×\(display.mode.pixelHeight) px\(hiDPI) · \(hz)"
+        return l("display_position_line", display.originX, display.originY, size)
     }
 
     private func tag(_ text: String, _ color: Color) -> some View {

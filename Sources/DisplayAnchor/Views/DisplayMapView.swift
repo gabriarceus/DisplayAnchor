@@ -20,7 +20,7 @@ struct DisplayMapView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let footprints = displays.map(footprint)
+            let footprints = LayoutEditing.seed(from: displays).map(\.frame)
             let map = DisplayMapGeometry(footprints: footprints, in: geometry.size)
             ZStack(alignment: .topLeading) {
                 ForEach(Array(displays.enumerated()), id: \.offset) { index, display in
@@ -94,18 +94,6 @@ struct DisplayMapView: View {
             if onSetMain != nil || onRotate != nil { Divider() }
             Button(l("display_edit_layout")) { onEdit() }
         }
-    }
-
-    /// Effective footprint. Mode dimensions already follow the display's
-    /// orientation (a 90°/270° display reports swapped width/height), so they map
-    /// to the on-screen rect as-is.
-    private func footprint(_ display: DisplaySnapshot) -> CGRect {
-        CGRect(
-            x: CGFloat(display.originX),
-            y: CGFloat(display.originY),
-            width: CGFloat(max(display.mode.width, 1)),
-            height: CGFloat(max(display.mode.height, 1))
-        )
     }
 
     /// Label detail scales with the rect: full info on roomy rects, just the name on

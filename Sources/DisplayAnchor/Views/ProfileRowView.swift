@@ -12,6 +12,7 @@ struct ProfileRowView: View {
     let onDelete: () -> Void
 
     @Environment(\.localizer) private var l
+    @Environment(\.locale) private var locale
 
     @State private var isRenaming = false
     @State private var draftLabel = ""
@@ -129,6 +130,7 @@ struct ProfileRowView: View {
 
     private func relativeDate(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
+        formatter.locale = locale
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
     }

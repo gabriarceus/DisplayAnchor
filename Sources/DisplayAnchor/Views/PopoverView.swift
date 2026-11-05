@@ -16,6 +16,7 @@ struct PopoverView: View {
     let onEditLayout: () -> Void
 
     @Environment(\.localizer) private var l
+    @Environment(\.locale) private var locale
 
     @State private var showSavedConfirmation = false
     @State private var confirmationTask: Task<Void, Never>?
@@ -277,12 +278,14 @@ struct PopoverView: View {
 
     private func timeString(_ date: Date) -> String {
         let formatter = DateFormatter()
+        formatter.locale = locale
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
 
     private func relativeTime(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
+        formatter.locale = locale
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
     }
