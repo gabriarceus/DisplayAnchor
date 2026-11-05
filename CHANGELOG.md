@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file. The format 
 - Dates, display details, and tint names follow the language selected in the app. The built-in display shows the name macOS gives it.
 - Display details list each value on its own labeled line. Hardware identifiers are no longer formatted like quantities, and a serial number the monitor does not report shows "—" instead of 0, also in copied diagnostics.
 - In the layout editor, a display dropped away from the others moves next to the nearest display, because macOS cannot use a detached display. Displays stay inside the editor area, which centers on the arrangement after each move without changing the zoom.
-- The Apply button of the layout editor is gray while there is nothing to apply.
+- The Apply button of the layout editor looks disabled while there is nothing to apply.
 - The delete confirmation of a saved layout appears faster, hides the other row details without moving the row, and stays for 5 seconds.
 - The Display details bar, with Copy all, stays in place while you scroll the list of displays.
 - The GitHub link in Settings shows the GitHub logo and the word GitHub instead of the repository name.

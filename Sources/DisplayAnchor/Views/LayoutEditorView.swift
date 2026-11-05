@@ -48,19 +48,27 @@ struct LayoutEditorView: View {
             .accessibilityLabel(l("editor_cancel_hint"))
             .panelHelp(l("editor_cancel_hint"))
 
-            Button(action: apply) {
-                Image(systemName: "checkmark")
+            // A disabled prominent button keeps its fill and still looks ready to press,
+            // so with nothing to apply the button uses the plain bordered style.
+            Group {
+                if hasChanges {
+                    applyButton.buttonStyle(.borderedProminent).tint(.green)
+                } else {
+                    applyButton.buttonStyle(.bordered).disabled(true)
+                }
             }
-            .buttonStyle(.borderedProminent)
             .controlSize(.small)
-            // A disabled prominent button keeps its tint, so it would still look ready to press.
-            .tint(hasChanges ? .green : .gray)
-            .disabled(!hasChanges)
             .accessibilityLabel(l("editor_apply_hint"))
             .panelHelp(l("editor_apply_hint"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+    }
+
+    private var applyButton: some View {
+        Button(action: apply) {
+            Image(systemName: "checkmark")
+        }
     }
 
     private var canvas: some View {
