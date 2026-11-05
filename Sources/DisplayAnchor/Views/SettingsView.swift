@@ -2,9 +2,8 @@ import AppKit
 import MenuBarKit
 import SwiftUI
 
-/// Settings form. Toggles write through to UserDefaults immediately; the settle
-/// interval is re-applied to the monitor when leaving the screen via `onBack`.
-/// The panel resizes to fit the whole form; scrolling (without indicators) kicks
+/// Settings form. Every control, the settle interval included, writes through to
+/// UserDefaults immediately. The panel resizes to fit the whole form; scrolling (without indicators) kicks
 /// in only when the content is taller than the screen.
 struct SettingsView: View {
     @ObservedObject var config: AppConfig
@@ -294,7 +293,8 @@ struct SettingsView: View {
             Button(l("updates_check_now")) { updates.checkNow() }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(updates.status == .checking)
+                // A held offer keeps Sparkle's session open; Install shows it instead.
+                .disabled(updates.status == .checking || !updates.canCheck)
             Spacer()
             updateStatusLabel
         }
@@ -309,14 +309,14 @@ struct SettingsView: View {
         }
     }
 
-    /// Status note closing the form: the running app and MenuBarKit versions and a
-    /// shortcut to the project page. Deliberately outside the sections, so it reads
-    /// as a footnote rather than a setting.
     /// GitHub logo bundled as a template image; nil when the resource is missing.
     private static let githubMark: NSImage? = Bundle.appResources
         .url(forResource: "github-mark", withExtension: "svg")
         .flatMap(NSImage.init(contentsOf:))
 
+    /// Status note closing the form: the running app and MenuBarKit versions and a
+    /// shortcut to the project page. Deliberately outside the sections, so it reads
+    /// as a footnote rather than a setting.
     private var footer: some View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 2) {

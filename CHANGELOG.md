@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The update window shows these notes without the Maintenance entries.
 
-## [Unreleased]
+## [1.2.0] - 2026-11-05
 
 ### Added
 
@@ -22,7 +22,7 @@ All notable changes to this project will be documented in this file. The format 
 - The menu bar and saved-layout icons draw each display at its relative size and height in the arrangement, and the main display is no longer drawn smaller than the others.
 - The update window shows what is new in the latest three versions, with formatted headings and lists, and lets you install the update, skip the version, or be reminded later.
 - The wait setting in Settings has a shorter label and a smaller field.
-- When you rename a saved layout, Escape cancels the change, a click on an empty part of the panel keeps the new name, and the row keeps its height.
+- When you rename a saved layout, Escape cancels the change, a click on an empty part of the panel or closing the panel keeps the new name, and the row keeps its height.
 
 ### Fixed
 
@@ -33,17 +33,19 @@ All notable changes to this project will be documented in this file. The format 
 - Launch at login explains when macOS needs approval, with a button that opens Login Items, and when macOS cannot register the app.
 - Rotating one of two same-model monitors with different serial numbers no longer rotates the other one.
 - Skipping a version in the update window removes the update indicator right away.
+- Check now is disabled while an update waits to be installed, instead of doing nothing; Install shows that update.
 - The wait field in Settings stops editing on Escape or on a click elsewhere in the panel.
 
 ### Maintenance
 
 - Added tests for event suppression during the app's own display changes, for display counts, and for skipped updates. A failed resolution change is logged.
 - Added the Swift style and writing guides, a swift-format configuration, and a format check that runs with the tests for pull requests and releases.
-- Panel tooltips, the Edit menu, launch at login, and the menu bar icon and panel placement use the shared MenuBarKit 1.2.0 helpers.
+- Panel tooltips, the Edit menu, launch at login, and the menu bar icon and panel placement use the shared MenuBarKit helpers.
 - Release notes are built as Markdown from this changelog and leave out Maintenance entries.
 - Removed the per-release appcast assets and the feed-override cleanup for release candidates 1 and 2.
 - The release workflow is the only publication path. It runs the tests and stops when the tag does not match Info.plist or the release already exists; release.sh checks the version and pushes the tag.
-- The saved-layout rename field and the wait field use the MenuBarKit helper that ends text editing on an outside click.
+- The saved-layout rename field and the wait field use the MenuBarKit helper that ends text editing on an outside click. Raised the minimum MenuBarKit version to 1.3.0.
+- Rotation falls back to the first monitor with the same vendor and product when no monitor reports a matching serial number, as before 1.2.0.
 
 ## [1.1.0] - 2026-11-04
 

@@ -53,6 +53,7 @@ struct ProfileRowView: View {
                     TextField(l("profile_name_placeholder"), text: $draftLabel)
                         .font(.subheadline)
                         .inputChrome(focused: renameFieldFocused)
+                        .onClickOutsideTextInput(isActive: isRenaming, perform: commitRename)
                         .focused($renameFieldFocused)
                         .onSubmit(commitRename)
                         .onExitCommand(perform: cancelRename)
@@ -100,7 +101,6 @@ struct ProfileRowView: View {
             }
         }
         .padding(.vertical, 2)
-        .onClickOutsideTextInput(isActive: isRenaming, perform: commitRename)
     }
 
     private func startRenaming() {

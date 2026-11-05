@@ -463,6 +463,7 @@ enum DisplayEngine {
     /// vendor, product, and serial against the display's EDID numbers (the
     /// replacement for the removed `CGDisplayIOServicePort`). The caller owns the
     /// returned service and must `IOObjectRelease` it; returns 0 if not found.
+    /// When no node matches the serial, the first vendor and product match is used.
     /// Displays with identical EDID numbers resolve to the first match — a
     /// best-effort tiebreak.
     private static func ioService(for id: CGDirectDisplayID) -> io_service_t {
@@ -478,21 +479,31 @@ enum DisplayEngine {
         }
         defer { IOObjectRelease(iterator) }
 
+        // Some adapters report a serial in IOKit that differs from CoreGraphics, so a
+        // vendor and product match stays available when no serial matches.
+        var fallback: io_service_t = 0
         var service = IOIteratorNext(iterator)
         while service != 0 {
             if let info = IODisplayCreateInfoDictionary(service, IOOptionBits(kIODisplayOnlyPreferredName))?
                 .takeRetainedValue() as? [String: Any],
                 (info["DisplayVendorID"] as? NSNumber)?.uint32Value == vendor,
-                (info["DisplayProductID"] as? NSNumber)?.uint32Value == model,
-                // EDIDs without a serial omit the key; CoreGraphics reports them as 0.
-                ((info["DisplaySerialNumber"] as? NSNumber)?.uint32Value ?? 0) == serial
+                (info["DisplayProductID"] as? NSNumber)?.uint32Value == model
             {
-                return service
+                // EDIDs without a serial omit the key; CoreGraphics reports them as 0.
+                if ((info["DisplaySerialNumber"] as? NSNumber)?.uint32Value ?? 0) == serial {
+                    if fallback != 0 { IOObjectRelease(fallback) }
+                    return service
+                }
+                if fallback == 0 {
+                    fallback = service
+                    service = IOIteratorNext(iterator)
+                    continue
+                }
             }
             IOObjectRelease(service)
             service = IOIteratorNext(iterator)
         }
-        return 0
+        return fallback
     }
 
     // MARK: - Diagnostics

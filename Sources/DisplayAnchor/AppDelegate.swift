@@ -37,7 +37,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ),
             width: PopoverView.popoverWidth
         )
-        panel.onDismiss = { [weak self] in
+        panel.onDismiss = { [weak self, weak panel] in
+            // Ends an open text edit, so its focus state clears and its click monitor stops.
+            panel?.makeFirstResponder(nil)
             self?.navigation.screen = .main
         }
         self.panel = panel
