@@ -14,8 +14,9 @@ __pycache__/
 # macOS
 .DS_Store
 
-# Editors / tooling
+# Editors / tooling / AI
 .vscode/
 .idea/
 .claude/
+.serena/
 .env*

@@ -22,12 +22,16 @@
 "settings_auto_restore_toggle" = "Ripristina automaticamente alla riconnessione";
 "settings_auto_restore_description" = "Quando ricolleghi gli schermi e corrispondono a un layout salvato, la disposizione viene ripristinata automaticamente.";
 "settings_notify_toggle" = "Avvisami quando un layout viene ripristinato";
-"settings_settle_label" = "Attesa dopo una modifica agli schermi (s)";
+"settings_settle_label" = "Attesa dopo una modifica agli schermi";
 "settings_settle_description" = "Quanto attendere che la configurazione degli schermi si stabilizzi prima di ripristinare (%d–%d secondi).";
 "settings_launch_at_login" = "Avvia all’accesso";
 "settings_launch_hint_unbundled" = "Disponibile solo con l’app compilata (.app).";
 "settings_launch_hint_approval" = "Autorizzazione richiesta: attivala in Impostazioni di Sistema → Generali → Elementi login.";
+"settings_launch_hint_not_found" = "Avvio all’accesso non disponibile: macOS non trova questa app tra gli elementi login.";
+"settings_launch_hint_unsupported" = "Avvio all’accesso non disponibile: macOS riporta uno stato sconosciuto per l’elemento login.";
+"settings_launch_open_settings" = "Apri Elementi login";
 "settings_section_updates" = "Aggiornamenti";
+"settings_menubarkit_version" = "MenuBarKit %@";
 
 /* Updates */
 "updates_current_version" = "Versione attuale";
@@ -42,25 +46,19 @@
 "updates_channel_rc" = "Stabile e RC";
 "updates_channel_rc_hint" = "Le release candidate possono contenere errori. Tornare a Stabile non installa una versione precedente.";
 "updates_release_notes" = "Note di rilascio";
-"updates_whats_new" = "Novità";
-"updates_confirm_title" = "Installare la versione %@?";
-"updates_confirm_message" = "L’aggiornamento verrà scaricato e verificato. Ti verrà chiesto di riavviare quando sarà pronto.";
-"updates_confirm_restart" = "L’aggiornamento è pronto. DisplayAnchor verrà riavviata per completare l’installazione.";
-"updates_confirm_install" = "Installa";
-"updates_confirm_cancel" = "Annulla";
 
 /* Popover */
 "popover_no_displays" = "Nessuno schermo rilevato.";
 "popover_saved_confirmation" = "Salvato";
 "popover_paused_until" = "In pausa fino alle %@";
 "popover_resume" = "Riprendi";
-"popover_pause_15" = "Pausa 15 min";
+"popover_pause" = "Pausa %d min";
 "popover_saved_layouts" = "Layout salvati";
 "popover_empty_hint" = "Disponi gli schermi, poi salva il layout per ricordare questa configurazione.";
 "popover_last_restore" = "Ultimo ripristino: %@";
 "popover_edit_layout_hint" = "Modifica layout — trascina gli schermi per riorganizzarli";
 "popover_resume_hint" = "%d min rimanenti — fai clic per riprendere";
-"popover_pause_hint" = "Sospendi il ripristino automatico per 15 minuti";
+"popover_pause_hint" = "Sospendi il ripristino automatico per %d minuti";
 "popover_save_layout" = "Salva layout";
 "popover_update_layout" = "Aggiorna layout";
 "popover_status_no_displays" = "Nessuno schermo rilevato";
@@ -72,7 +70,9 @@
 "display_details" = "Dettagli schermo";
 "display_copied" = "Copiato negli appunti";
 "display_copy" = "Copia";
+"display_copy_all" = "Copia tutto";
 "display_copy_hint" = "Copia la diagnostica completa negli appunti";
+"display_copy_one_hint" = "Copia negli appunti la diagnostica di questo schermo";
 "display_set_main" = "Imposta come schermo principale";
 "display_rotate" = "Ruota";
 "display_edit_layout" = "Modifica layout…";
@@ -80,6 +80,13 @@
 "display_main" = "principale";
 "display_count_one" = "%d schermo";
 "display_count_other" = "%d schermi";
+"display_indistinguishable" = "⚠︎ indistinguibile";
+"display_field_position" = "Posizione";
+"display_field_mode" = "Modalità";
+"display_field_pixels" = "Pixel";
+"display_field_hardware" = "Hardware";
+"display_field_serial" = "Seriale";
+"display_hardware_value" = "produttore %@ · modello %@ · unità %@";
 
 /* Editor */
 "editor_title" = "Modifica layout";
@@ -112,3 +119,23 @@
 "notification_rejected_body" = "macOS ha rifiutato il layout salvato “%@”.";
 "notification_update_title" = "Aggiornamento disponibile";
 "notification_update_body" = "DisplayAnchor %@ è disponibile. Apri DisplayAnchor per installarlo.";
+
+/* Tint */
+"tint_blue" = "Blu";
+"tint_purple" = "Viola";
+"tint_pink" = "Rosa";
+"tint_red" = "Rosso";
+"tint_orange" = "Arancione";
+"tint_yellow" = "Giallo";
+"tint_green" = "Verde";
+"tint_graphite" = "Grafite";
+"tint_teal" = "Verde acqua";
+
+/* Edit menu */
+"menu_edit" = "Modifica";
+"menu_undo" = "Annulla";
+"menu_redo" = "Ripristina";
+"menu_cut" = "Taglia";
+"menu_copy" = "Copia";
+"menu_paste" = "Incolla";
+"menu_select_all" = "Seleziona tutto";

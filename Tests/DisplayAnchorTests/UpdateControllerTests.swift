@@ -36,6 +36,24 @@ struct UpdateControllerTests {
         #expect(controller.status == .failed)
     }
 
+    @Test func skippingTheOfferedVersionClearsTheAvailableStatus() throws {
+        let controller = UpdateController(config: AppConfig())
+        let updater = makeUpdater()
+        let item = try #require(
+            SUAppcastItem(dictionary: [
+                "sparkle:version": "6",
+                "sparkle:shortVersionString": "1.1.0",
+                "enclosure": ["url": "https://example.invalid/update.zip"],
+            ]))
+        let state = try #require(SPUUserUpdateState(coder: ScheduledUpdateDecoder()))
+
+        controller.updater(updater, didFindValidUpdate: item)
+        #expect(controller.status == .available("1.1.0"))
+        controller.updater(updater, userDidMake: .skip, forUpdate: item, state: state)
+
+        #expect(controller.status == .upToDate)
+    }
+
     private func makeUpdater() -> SPUUpdater {
         SPUUpdater(
             hostBundle: .main,

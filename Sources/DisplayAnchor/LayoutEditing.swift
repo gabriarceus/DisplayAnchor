@@ -12,7 +12,7 @@ struct DraftDisplay: Identifiable, Equatable {
     let size: CGSize
     var isMain: Bool
 
-    var id: String { stableID.identityKey }
+    var id: String { stableID.snapshotKey }
     var frame: CGRect { CGRect(origin: origin, size: size) }
 }
 
@@ -53,15 +53,15 @@ enum LayoutEditing {
 
         for other in others {
             // Horizontal: come flush to a side, or align left/right edges.
-            considerX(other.maxX)                     // dragged.left  == other.right
-            considerX(other.minX - dragged.width)     // dragged.right == other.left
-            considerX(other.minX)                     // left edges aligned
-            considerX(other.maxX - dragged.width)     // right edges aligned
+            considerX(other.maxX)  // dragged.left  == other.right
+            considerX(other.minX - dragged.width)  // dragged.right == other.left
+            considerX(other.minX)  // left edges aligned
+            considerX(other.maxX - dragged.width)  // right edges aligned
             // Vertical: come flush above/below, or align top/bottom edges.
-            considerY(other.maxY)                     // dragged.top    == other.bottom
-            considerY(other.minY - dragged.height)    // dragged.bottom == other.top
-            considerY(other.minY)                     // top edges aligned
-            considerY(other.maxY - dragged.height)    // bottom edges aligned
+            considerY(other.maxY)  // dragged.top    == other.bottom
+            considerY(other.minY - dragged.height)  // dragged.bottom == other.top
+            considerY(other.minY)  // top edges aligned
+            considerY(other.maxY - dragged.height)  // bottom edges aligned
         }
 
         return CGPoint(x: bestX?.value ?? dragged.minX, y: bestY?.value ?? dragged.minY)
@@ -83,13 +83,65 @@ enum LayoutEditing {
         return rect.origin
     }
 
+    /// Whether every frame is linked to the others through shared edges of positive
+    /// length, as macOS requires for an arrangement. Corner contact does not count.
+    static func isConnected(_ frames: [CGRect]) -> Bool {
+        guard var pending = frames.indices.first.map({ [$0] }) else { return true }
+        var reached: Set<Int> = Set(pending)
+        while let index = pending.popLast() {
+            for other in frames.indices where !reached.contains(other) && sharesEdge(frames[index], frames[other]) {
+                reached.insert(other)
+                pending.append(other)
+            }
+        }
+        return reached.count == frames.count
+    }
+
+    /// Returns the origin nearest to `dragged` that places it flush against a
+    /// neighbour, clear of every other frame, with the whole arrangement connected.
+    /// The shared edge is at least `minimumSharedEdge` long, or the shorter side when
+    /// that is less. Returns nil when no such position exists.
+    static func attach(_ dragged: CGRect, among others: [CGRect], minimumSharedEdge: CGFloat) -> CGPoint? {
+        var candidates: [CGPoint] = []
+        for other in others {
+            let overlapY = min(minimumSharedEdge, dragged.height, other.height)
+            let overlapX = min(minimumSharedEdge, dragged.width, other.width)
+            let y = min(max(dragged.minY, other.minY - dragged.height + overlapY), other.maxY - overlapY)
+            let x = min(max(dragged.minX, other.minX - dragged.width + overlapX), other.maxX - overlapX)
+            candidates += [
+                CGPoint(x: other.maxX, y: y),  // right of other
+                CGPoint(x: other.minX - dragged.width, y: y),  // left of other
+                CGPoint(x: x, y: other.maxY),  // below other
+                CGPoint(x: x, y: other.minY - dragged.height),  // above other
+            ]
+        }
+        return
+            candidates
+            .filter { origin in
+                let rect = CGRect(origin: origin, size: dragged.size)
+                return !others.contains { !$0.intersection(rect).isEmpty } && isConnected(others + [rect])
+            }
+            .min { hypot($0.x - dragged.minX, $0.y - dragged.minY) < hypot($1.x - dragged.minX, $1.y - dragged.minY) }
+    }
+
+    /// Whether `a` and `b` touch along an edge segment of positive length.
+    private static func sharesEdge(_ a: CGRect, _ b: CGRect) -> Bool {
+        // Half a point absorbs rounding from the map transform.
+        let tolerance: CGFloat = 0.5
+        let overlapX = min(a.maxX, b.maxX) - max(a.minX, b.minX)
+        let overlapY = min(a.maxY, b.maxY) - max(a.minY, b.minY)
+        let touchX = abs(a.maxX - b.minX) <= tolerance || abs(b.maxX - a.minX) <= tolerance
+        let touchY = abs(a.maxY - b.minY) <= tolerance || abs(b.maxY - a.minY) <= tolerance
+        return (touchX && overlapY > tolerance) || (touchY && overlapX > tolerance)
+    }
+
     /// Rebuilds a `LayoutProfile` from the draft, carrying mode / mirror /
     /// rotation from the matching base snapshots and overriding origin + isMain.
     /// Displays whose identity is missing from `base` are dropped.
     static func profile(from draft: [DraftDisplay], base: [DisplaySnapshot], fingerprint: String) -> LayoutProfile {
-        let byIdentity = Dictionary(base.map { ($0.stableID.identityKey, $0) }, uniquingKeysWith: { first, _ in first })
+        let byKey = Dictionary(base.map { ($0.stableID.snapshotKey, $0) }, uniquingKeysWith: { first, _ in first })
         let displays: [DisplaySnapshot] = draft.compactMap { d in
-            guard var snapshot = byIdentity[d.stableID.identityKey] else { return nil }
+            guard var snapshot = byKey[d.id] else { return nil }
             snapshot.originX = Int(d.origin.x.rounded())
             snapshot.originY = Int(d.origin.y.rounded())
             snapshot.isMain = d.isMain

@@ -1,3 +1,4 @@
+import Combine
 import MenuBarKit
 import SwiftUI
 
@@ -8,20 +9,25 @@ enum PanelScreen {
     case editLayout
 }
 
-/// Root content of the panel: swaps between the main view and settings in place,
-/// so everything lives in a single panel instead of a separate window. Chrome is
-/// provided by [PanelChrome] since the hosting window is borderless and transparent.
+/// Root content of the panel: shows the main view, settings, or the layout editor
+/// in place, inside `PanelChrome`, with the selected tint, language, and locale.
 struct PanelRootView: View {
     @ObservedObject var store: LayoutStore
     @ObservedObject var config: AppConfig
     @ObservedObject var navigation: PanelNavigation<PanelScreen>
     @ObservedObject var updates: UpdateController
+    /// Whether the panel is on screen. The hosting window keeps this view alive while hidden.
+    let isPresented: AnyPublisher<Bool, Never>
     @StateObject private var systemAccent = SystemAccentObserver()
+    @State private var isPanelPresented = false
 
     var body: some View {
         PanelChrome(tint: glassTint) {
-            content.hoverTipHost().environment(\.localizer, config.localizer)
+            content.panelHelpHost(isActive: isPanelPresented)
+                .environment(\.localizer, config.localizer)
+                .environment(\.locale, config.appLanguage.map(Locale.init(identifier:)) ?? .current)
         }
+        .onReceive(isPresented) { isPanelPresented = $0 }
     }
 
     private var glassTint: Color? {
@@ -44,7 +50,6 @@ struct PanelRootView: View {
             )
         case .settings:
             SettingsView(config: store.config, notifier: store.notifier, updates: updates) {
-                store.applySettings()
                 navigation.screen = .main
             }
         case .editLayout:

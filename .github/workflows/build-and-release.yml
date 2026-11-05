@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       create_release:
@@ -11,8 +14,10 @@ on:
         type: boolean
         default: false
 
+# Release runs are serialized because they push the shared feed. Pull request runs
+# use their own group, so they never replace a queued release run.
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || 'release' }}
   cancel-in-progress: false
 
 permissions:
@@ -27,8 +32,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Fail before building: an existing release would get its archive replaced
+      # while the shared feed keeps the old signature, breaking every update.
+      - name: Check release version
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "$TAG" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match Info.plist version ($TAG)." >&2
+            exit 1
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — bump the version in Info.plist." >&2
+            exit 1
+          fi
+
+      - name: Check Swift formatting
+        run: swift format lint --recursive --strict Package.swift Sources Tests
+
       - name: Test channel feed publication
         run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+
+      - name: Run Swift tests
+        run: swift test
 
       - name: Build DisplayAnchor.app
         run: |
@@ -41,7 +69,7 @@ jobs:
 
       - name: Package .zip archive
         run: |
-          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist 2>/dev/null || echo "1.0.0")
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
           ZIP_NAME="DisplayAnchor-${VERSION}.zip"
           ditto -c -k --keepParent "build/DisplayAnchor.app" "build/${ZIP_NAME}"
           cp "build/${ZIP_NAME}" "build/DisplayAnchor.zip"
@@ -55,8 +83,8 @@ jobs:
           path: build/DisplayAnchor.zip
           if-no-files-found: error
 
-      # Keep the per-release appcast for older clients; its signed archive item
-      # is also merged into the channel feed after the assets are published.
+      # Its signed archive item is merged into the channel feed after the
+      # archive is published.
       - name: Generate signed appcast
         if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
         env:
@@ -68,7 +96,7 @@ jobs:
           mkdir -p appcast
           cp "build/${ZIP_NAME}" appcast/
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
-          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "appcast/${ZIP_NAME%.zip}.txt"
+          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "appcast/${ZIP_NAME%.zip}.md"
           echo "$SPARKLE_PRIVATE_KEY" | "$GENERATE_APPCAST" \
             --ed-key-file - \
             --embed-release-notes \
@@ -78,7 +106,7 @@ jobs:
             appcast/
           cat appcast/appcast.xml
 
-      - name: Create / Update GitHub Release
+      - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
@@ -87,9 +115,7 @@ jobs:
           tag_name: ${{ env.TAG }}
           target_commitish: ${{ github.sha }}
           prerelease: ${{ contains(env.TAG, '-') }}
-          files: |
-            build/${{ env.ZIP_NAME }}
-            appcast/appcast.xml
+          files: build/${{ env.ZIP_NAME }}
           generate_release_notes: true
 
       - name: Publish channel appcast

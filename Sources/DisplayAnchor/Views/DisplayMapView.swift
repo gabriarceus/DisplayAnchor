@@ -20,7 +20,7 @@ struct DisplayMapView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let footprints = displays.map(footprint)
+            let footprints = LayoutEditing.seed(from: displays).map(\.frame)
             let map = DisplayMapGeometry(footprints: footprints, in: geometry.size)
             ZStack(alignment: .topLeading) {
                 ForEach(Array(displays.enumerated()), id: \.offset) { index, display in
@@ -37,18 +37,9 @@ struct DisplayMapView: View {
 
     @ViewBuilder
     private func displayRect(_ display: DisplaySnapshot, size: CGSize) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 4)
-        shape
-            .fill(display.isMain ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.12))
-            .overlay(
-                shape.strokeBorder(
-                    display.isMain ? Color.accentColor : Color.secondary.opacity(0.5),
-                    lineWidth: display.isMain ? 1.5 : 1
-                )
-            )
+        DisplayTile(isMain: display.isMain, fillOpacity: 0.12, borderOpacity: 0.5, mainBorderWidth: 1.5)
             .overlay(label(for: display, in: size))
             .overlay(alignment: .topTrailing) { rotationBadge(for: display, in: size) }
-            .contentShape(shape)
             .optionalContextMenu(hasMenu) { menuContent(for: display) }
     }
 
@@ -65,7 +56,7 @@ struct DisplayMapView: View {
                 .padding(.vertical, 1)
                 .background(Capsule().fill(Color.secondary.opacity(0.15)))
                 .padding(2)
-                .hoverTip(l("display_rotated_hint", degrees))
+                .panelHelp(l("display_rotated_hint", degrees))
         }
     }
 
@@ -94,18 +85,6 @@ struct DisplayMapView: View {
             if onSetMain != nil || onRotate != nil { Divider() }
             Button(l("display_edit_layout")) { onEdit() }
         }
-    }
-
-    /// Effective footprint. Mode dimensions already follow the display's
-    /// orientation (a 90°/270° display reports swapped width/height), so they map
-    /// to the on-screen rect as-is.
-    private func footprint(_ display: DisplaySnapshot) -> CGRect {
-        CGRect(
-            x: CGFloat(display.originX),
-            y: CGFloat(display.originY),
-            width: CGFloat(max(display.mode.width, 1)),
-            height: CGFloat(max(display.mode.height, 1))
-        )
     }
 
     /// Label detail scales with the rect: full info on roomy rects, just the name on

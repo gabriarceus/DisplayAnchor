@@ -27,8 +27,8 @@ def feed(version, build, signature="archive-signature"):
 class MergeAppcastTests(unittest.TestCase):
     def test_embedded_notes_survive_channel_publication(self):
         candidate = feed("1.1.0-rc4", 6)
-        notes = ET.SubElement(candidate.find("./channel/item"), "description", {f"{{{SPARKLE}}}format": "plain-text"})
-        notes.text = "Added\n\n• Changelog in the update alert."
+        notes = ET.SubElement(candidate.find("./channel/item"), "description", {f"{{{SPARKLE}}}format": "markdown"})
+        notes.text = "## 1.1.0-rc4\n\n### Added\n\n- Changelog in the update window."
         merged = merge_appcasts(candidate, feed("1.1.0", 5))
         published = merged.find("./channel/item/description")
         self.assertEqual(published.text, notes.text)
@@ -123,15 +123,35 @@ class PublishAppcastTests(unittest.TestCase):
 
 
 class ReleaseNotesTests(unittest.TestCase):
-    def test_exact_version_wins_over_unreleased_and_other_versions(self):
-        changelog = "# Changelog\n\n## [Unreleased]\n\n- Future work\n\n## [1.1.0-rc4]\n\n### Added\n\n- Show **release notes** with [Sparkle](https://sparkle-project.org).\n\n## [1.0.0]\n\n- Old work\n"
-        self.assertEqual(release_notes(changelog, "1.1.0-rc4"), "Added\n\n• Show release notes with Sparkle.\n")
+    def test_exact_version_comes_first_followed_by_older_releases(self):
+        changelog = (
+            "# Changelog\n\n## [Unreleased]\n\n- Future work\n\n"
+            "## [1.1.0] - 2026-11-04\n\n### Added\n\n- Show **release notes** with [Sparkle](https://sparkle-project.org).\n\n"
+            "## [1.0.1] - 2026-08-20\n\n- Fix\n\n## [1.0.0] - 2026-08-11\n\n- First\n\n## [0.9.0]\n\n- Too old\n"
+        )
+        self.assertEqual(
+            release_notes(changelog, "1.1.0"),
+            "## 1.1.0 — Nov 4, 2026\n\n### Added\n\n- Show **release notes** with [Sparkle](https://sparkle-project.org).\n\n"
+            "## 1.0.1 — Aug 20, 2026\n\n- Fix\n\n## 1.0.0 — Aug 11, 2026\n\n- First\n",
+        )
 
-    def test_unreleased_is_used_before_a_version_section_is_created(self):
-        self.assertEqual(release_notes("## [Unreleased]\n\n- New `controls`\n\n## [1.0.0]\n\n- Old work", "1.1.0-rc4"), "• New controls\n")
+    def test_unreleased_is_titled_with_the_version_being_published(self):
+        notes = release_notes("## [Unreleased]\n\n- New controls\n\n## [1.0.0] - 2026-08-11\n\n- Old work", "1.1.0-rc4")
+        self.assertEqual(notes, "## 1.1.0-rc4\n\n- New controls\n\n## 1.0.0 — Aug 11, 2026\n\n- Old work\n")
 
-    def test_empty_or_missing_notes_fail_instead_of_publishing_an_empty_alert(self):
-        for changelog in ("# Changelog", "## [Unreleased]\n\n## [1.0.0]\n\n- Old work"):
+    def test_maintenance_entries_stay_out_of_the_update_window(self):
+        changelog = (
+            "## [Unreleased]\n\n### Fixed\n\n- Crash\n\n### Maintenance\n\n- Faster CI\n\n### Removed\n\n- Old option\n\n"
+            "## [1.0.0] - 2026-08-11\n\n### Maintenance\n\n- Tooling only\n"
+        )
+        self.assertEqual(release_notes(changelog, "1.1.0"), "## 1.1.0\n\n### Fixed\n\n- Crash\n\n### Removed\n\n- Old option\n")
+
+    def test_missing_or_internal_only_notes_fail_instead_of_publishing_an_empty_window(self):
+        for changelog in (
+            "# Changelog",
+            "## [Unreleased]\n\n## [1.0.0]\n\n- Old work",
+            "## [Unreleased]\n\n### Maintenance\n\n- Tooling only\n",
+        ):
             with self.assertRaises(ValueError):
                 release_notes(changelog, "1.1.0-rc4")
 

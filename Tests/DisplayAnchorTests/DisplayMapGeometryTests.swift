@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Testing
+
 @testable import DisplayAnchor
 
 struct DisplayMapGeometryTests {
@@ -28,7 +29,7 @@ struct DisplayMapGeometryTests {
         let mapped = geometry.rect(for: display)
         #expect(abs(mapped.width - 380.0) < 0.0001)
         #expect(abs(mapped.height - (1080.0 * expectedScale)) < 0.0001)
-        #expect(abs(mapped.minX - 10.0) < 0.0001) // exactly padded horizontally
+        #expect(abs(mapped.minX - 10.0) < 0.0001)  // exactly padded horizontally
         // Vertically centered: 10 + (280 - 213.75) / 2 = 43.125
         #expect(abs(mapped.minY - 43.125) < 0.0001)
 

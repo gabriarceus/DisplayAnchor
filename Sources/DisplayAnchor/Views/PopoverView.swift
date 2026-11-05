@@ -9,16 +9,18 @@ struct PopoverView: View {
     static let popoverHeight: CGFloat = 540
 
     @ObservedObject var store: LayoutStore
-    /// Version of a pending update, surfaced as a badge on the settings button —
-    /// a background check the user never sees would be pointless.
+    /// Version of a pending update, shown as a badge on the settings button; nil
+    /// when no update is pending.
     let availableUpdateVersion: String?
     let onOpenSettings: () -> Void
     let onEditLayout: () -> Void
 
     @Environment(\.localizer) private var l
+    @Environment(\.locale) private var locale
 
     @State private var showSavedConfirmation = false
     @State private var confirmationTask: Task<Void, Never>?
+    @State private var detailsExpanded = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -66,14 +68,32 @@ struct PopoverView: View {
 
             Divider()
 
-            // Scrolling section: per-display details (expandable) and saved layouts.
+            // The details bar stays outside the ScrollView so it never moves while the list scrolls.
+            if !store.currentDisplays.isEmpty {
+                DisplayDetailHeader(
+                    expanded: $detailsExpanded,
+                    onCopyAll: { copyToPasteboard(store.diagnosticsText()) }
+                )
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                // Separates the bar from the saved layouts; hidden, not removed, so the list does not shift.
+                Divider().opacity(detailsExpanded ? 0 : 1)
+            }
+
+            // Scrolling section: per-display details (when expanded) and saved layouts.
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    if !store.currentDisplays.isEmpty {
+                    if detailsExpanded && !store.currentDisplays.isEmpty {
                         DisplayDetailView(
                             displays: store.currentDisplays,
                             ambiguousKeys: store.ambiguousIdentityKeys,
-                            onCopyDiagnostics: copyDiagnostics
+                            onCopyDisplay: { display in
+                                copyToPasteboard(
+                                    DisplayEngine.diagnosticsText(
+                                        for: display,
+                                        isAmbiguous: store.ambiguousIdentityKeys.contains(display.stableID.identityKey))
+                                )
+                            }
                         )
                         Divider()
                     }
@@ -92,10 +112,12 @@ struct PopoverView: View {
     }
 
     private var header: some View {
-        PanelHeader(title: "DisplayAnchor", leading: {
-            Image(nsImage: DisplayCountIcon.image(displays: store.currentDisplays))
-                .renderingMode(.template)
-        })
+        PanelHeader(
+            title: "DisplayAnchor",
+            leading: {
+                Image(nsImage: DisplayCountIcon.image(displays: store.currentDisplays))
+                    .renderingMode(.template)
+            })
     }
 
     private var statusLine: some View {
@@ -107,9 +129,10 @@ struct PopoverView: View {
                 Button(action: onEditLayout) {
                     Image(systemName: "rectangle.3.group")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .hoverTip(l("popover_edit_layout_hint"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(l("popover_edit_layout_hint"))
+                .panelHelp(l("popover_edit_layout_hint"))
             }
         }
     }
@@ -133,8 +156,9 @@ struct PopoverView: View {
                     .foregroundStyle(.green)
                     .lineLimit(1)
             } else if store.config.autoRestoreEnabled,
-                      store.isAutoRestoreSnoozed,
-                      let until = store.autoRestoreSnoozedUntil {
+                store.isAutoRestoreSnoozed,
+                let until = store.autoRestoreSnoozedUntil
+            {
                 Text(l("popover_paused_until", timeString(until)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -154,16 +178,17 @@ struct PopoverView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .hoverTip(l("popover_resume_hint", minutesRemaining(until: until)))
+                .panelHelp(l("popover_resume_hint", minutesRemaining(until: until)))
             } else {
+                let minutes = Int(LayoutStore.autoRestorePauseDuration / 60)
                 Button {
-                    store.snoozeAutoRestore(for: 15 * 60)
+                    store.snoozeAutoRestore(for: LayoutStore.autoRestorePauseDuration)
                 } label: {
-                    Label(l("popover_pause_15"), systemImage: "pause.circle")
+                    Label(l("popover_pause", minutes), systemImage: "pause.circle")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .hoverTip(l("popover_pause_hint"))
+                .panelHelp(l("popover_pause_hint", minutes))
             }
         }
     }
@@ -199,13 +224,13 @@ struct PopoverView: View {
     private var footer: some View {
         HStack {
             if let date = store.lastRestoreAt {
-                Text(l("popover_last_restore", relativeTime(date)))
+                Text(l("popover_last_restore", date.relativeText(locale: locale)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer()
-            GlassIconButton(systemImage: "gearshape") {
+            GlassIconButton(systemImage: "gearshape", accessibilityLabel: l("common_settings")) {
                 onOpenSettings()
             }
             .overlay(alignment: .topTrailing) {
@@ -216,14 +241,14 @@ struct PopoverView: View {
                         .offset(x: 1, y: -1)
                 }
             }
-            .hoverTip(
+            .panelHelp(
                 availableUpdateVersion.map { l("updates_available", $0) } ?? l("common_settings")
             )
 
-            GlassIconButton(systemImage: "power") {
+            GlassIconButton(systemImage: "power", accessibilityLabel: l("common_quit")) {
                 NSApp.terminate(nil)
             }
-            .hoverTip(l("common_quit"))
+            .panelHelp(l("common_quit"))
         }
     }
 
@@ -270,21 +295,16 @@ struct PopoverView: View {
         }
     }
 
-    private func copyDiagnostics() {
+    private func copyToPasteboard(_ text: String) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(store.diagnosticsText(), forType: .string)
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     private func timeString(_ date: Date) -> String {
         let formatter = DateFormatter()
+        formatter.locale = locale
         formatter.timeStyle = .short
         return formatter.string(from: date)
-    }
-
-    private func relativeTime(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
     }
 
     private func profileStoreIssueText(_ issue: ProfileStoreIssue) -> String {

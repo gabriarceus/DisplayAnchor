@@ -18,6 +18,14 @@ mkdir -p "$APP/Contents/MacOS"
 cp "$BIN_DIR/DisplayAnchor" "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
 
+# Record the MenuBarKit revision SwiftPM resolved (GitHub tag or sibling
+# checkout) for the Settings footer. A sibling checkout can describe as
+# 1.2.0-3-gabc1234 or end in -dirty.
+MENUBARKIT_PATH=$(swift package show-dependencies --format json | python3 -c \
+	'import json, sys; print(next(d["path"] for d in json.load(sys.stdin)["dependencies"] if d["identity"] == "menubarkit"))')
+MENUBARKIT_VERSION=$(git -C "$MENUBARKIT_PATH" describe --tags --always --dirty)
+/usr/libexec/PlistBuddy -c "Add :MenuBarKitVersion string $MENUBARKIT_VERSION" "$APP/Contents/Info.plist"
+
 # SwiftPM resource bundles (localized .strings): Bundle.module resolves them
 # from Contents/Resources; without this copy it falls back to the absolute
 # .build path baked into the binary, reading the repo checkout at runtime.
@@ -43,7 +51,6 @@ if [[ -f "$ICON_SRC" ]]; then
 	sips -z 512 512   "$ICON_SRC" --out "$ICONSET/icon_256x256@2x.png" >/dev/null
 	sips -z 512 512   "$ICON_SRC" --out "$ICONSET/icon_512x512.png"    >/dev/null
 	sips -z 1024 1024 "$ICON_SRC" --out "$ICONSET/icon_512x512@2x.png" >/dev/null
-	mkdir -p "$APP/Contents/Resources"
 	iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 	echo "Embedded app icon from $ICON_SRC"
 else

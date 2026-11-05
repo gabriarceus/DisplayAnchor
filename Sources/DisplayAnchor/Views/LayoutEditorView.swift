@@ -3,9 +3,9 @@ import SwiftUI
 
 /// Drag-and-drop layout editor. Works on an in-memory draft seeded from the live
 /// arrangement: dragging only mutates the draft, so the real displays stay
-/// untouched until the user applies. The map geometry is frozen for the session
-/// (computed from the seed bounds) so dragging never rescales the canvas. If the
-/// connected set changes underneath the editor, it discards the draft and leaves.
+/// untouched until the user applies. The map scale is fixed for the session; drags
+/// stay inside the visible area, and the view recenters on the draft on release.
+/// If the connected set changes underneath the editor, it discards the draft and leaves.
 struct LayoutEditorView: View {
     @ObservedObject var store: LayoutStore
     let onClose: () -> Void
@@ -26,7 +26,7 @@ struct LayoutEditorView: View {
             Divider()
             footer
         }
-        .frame(width: 340, height: 540)
+        .frame(width: PopoverView.popoverWidth, height: PopoverView.popoverHeight)
         .onAppear(perform: load)
         .onChange(of: store.currentFingerprint) { _, newValue in
             // The connected set changed — the draft is stale; bail out safely.
@@ -41,27 +41,39 @@ struct LayoutEditorView: View {
             Text(l("editor_title")).font(.headline)
             Spacer()
             Button(action: onClose) {
-                Image(systemName: "xmark.circle")
+                Image(systemName: "xmark")
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .hoverTip(l("editor_cancel_hint"))
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .accessibilityLabel(l("editor_cancel_hint"))
+            .panelHelp(l("editor_cancel_hint"))
 
-            Button(action: apply) {
-                Image(systemName: "checkmark.circle.fill")
+            // A disabled prominent button keeps its fill and still looks ready to press,
+            // so with nothing to apply the button uses the plain bordered style.
+            Group {
+                if hasChanges {
+                    applyButton.buttonStyle(.borderedProminent).tint(.green)
+                } else {
+                    applyButton.buttonStyle(.bordered).disabled(true)
+                }
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(hasChanges ? Color.green : Color.secondary)
-            .disabled(!hasChanges)
-            .hoverTip(l("editor_apply_hint"))
+            .controlSize(.small)
+            .accessibilityLabel(l("editor_apply_hint"))
+            .panelHelp(l("editor_apply_hint"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
     }
 
+    private var applyButton: some View {
+        Button(action: apply) {
+            Image(systemName: "checkmark")
+        }
+    }
+
     private var canvas: some View {
         GeometryReader { geometry in
-            let map = DisplayMapGeometry(footprints: [world], in: geometry.size, padding: 16)
+            let map = DisplayMapGeometry(footprints: [world], in: geometry.size, padding: Self.canvasPadding)
             ZStack(alignment: .topLeading) {
                 ForEach(draft) { display in
                     let rect = map.rect(for: display.frame)
@@ -72,6 +84,7 @@ struct LayoutEditorView: View {
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
+            .clipped()
             // One canvas-level gesture instead of a gesture per rect: a per-rect
             // DragGesture on macOS is cancelled when the cursor leaves the moving
             // rect and fights with .contextMenu, so the (static) canvas owns the
@@ -79,7 +92,7 @@ struct LayoutEditorView: View {
             // never starves the rects' context-menu recognizers.
             .contentShape(Rectangle())
             .coordinateSpace(name: Self.canvasSpace)
-            .simultaneousGesture(canvasDragGesture(map: map))
+            .simultaneousGesture(canvasDragGesture(map: map, bounds: visibleBounds(map: map, in: geometry.size)))
         }
     }
 
@@ -98,17 +111,8 @@ struct LayoutEditorView: View {
     /// hit region stays at the pre-offset position and right-clicks miss.
     @ViewBuilder
     private func displayRect(_ display: DraftDisplay, size: CGSize) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 4)
-        shape
-            .fill(display.isMain ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.14))
-            .overlay(
-                shape.strokeBorder(
-                    display.isMain ? Color.accentColor : Color.secondary.opacity(0.6),
-                    lineWidth: display.isMain ? 2 : 1
-                )
-            )
+        DisplayTile(isMain: display.isMain, fillOpacity: 0.14, borderOpacity: 0.6, mainBorderWidth: 2)
             .overlay(label(for: display, in: size))
-            .contentShape(shape)
             .contextMenu {
                 Button(l("display_set_main")) { setMain(display.id) }
                     .disabled(display.isMain)
@@ -136,8 +140,19 @@ struct LayoutEditorView: View {
     // MARK: - Drag
 
     private static let canvasSpace = "editorCanvas"
+    private static let canvasPadding: CGFloat = 16
+    /// Shortest shared edge, in display points, when a dropped display is moved next to a neighbour.
+    private static let minimumSharedEdge: CGFloat = 200
 
-    private func canvasDragGesture(map: DisplayMapGeometry) -> some Gesture {
+    /// Display-space rect the canvas shows inside its padding, centered on `world`.
+    private func visibleBounds(map: DisplayMapGeometry, in size: CGSize) -> CGRect {
+        let width = map.displayLength(max(size.width - Self.canvasPadding * 2, 1))
+        let height = map.displayLength(max(size.height - Self.canvasPadding * 2, 1))
+        return CGRect(x: world.midX - width / 2, y: world.midY - height / 2, width: width, height: height)
+    }
+
+    /// Drag that moves the display under the pointer, kept inside `bounds`.
+    private func canvasDragGesture(map: DisplayMapGeometry, bounds: CGRect) -> some Gesture {
         DragGesture(minimumDistance: 2, coordinateSpace: .named(Self.canvasSpace))
             .onChanged { value in
                 if dragging == nil {
@@ -147,22 +162,39 @@ struct LayoutEditorView: View {
                     dragging = (hit.id, hit.origin)
                 }
                 guard let (id, start) = dragging,
-                      let display = draft.first(where: { $0.id == id }) else { return }
+                    let display = draft.first(where: { $0.id == id })
+                else { return }
                 let moved = CGPoint(
-                    x: start.x + map.displayLength(value.translation.width),
-                    y: start.y + map.displayLength(value.translation.height)
+                    x: min(
+                        max(start.x + map.displayLength(value.translation.width), bounds.minX),
+                        bounds.maxX - display.size.width),
+                    y: min(
+                        max(start.y + map.displayLength(value.translation.height), bounds.minY),
+                        bounds.maxY - display.size.height)
                 )
                 let others = otherFrames(excluding: id)
-                let snapped = LayoutEditing.snap(CGRect(origin: moved, size: display.size),
-                                                 among: others, threshold: map.displayLength(10))
+                let snapped = LayoutEditing.snap(
+                    CGRect(origin: moved, size: display.size),
+                    among: others, threshold: map.displayLength(10))
                 updateOrigin(id, to: snapped)
             }
             .onEnded { _ in
-                if let id = dragging?.id, let index = draft.firstIndex(where: { $0.id == id }) {
+                if let (id, start) = dragging, let index = draft.firstIndex(where: { $0.id == id }) {
                     let others = otherFrames(excluding: id)
                     var origin = LayoutEditing.snap(draft[index].frame, among: others, threshold: map.displayLength(10))
-                    origin = LayoutEditing.resolveOverlap(CGRect(origin: origin, size: draft[index].size), among: others)
-                    draft[index].origin = origin
+                    origin = LayoutEditing.resolveOverlap(
+                        CGRect(origin: origin, size: draft[index].size), among: others)
+                    let dropped = CGRect(origin: origin, size: draft[index].size)
+                    if !LayoutEditing.isConnected(others + [dropped]) {
+                        // macOS would move a detached display on apply; settle it next to a neighbour instead.
+                        origin =
+                            LayoutEditing.attach(dropped, among: others, minimumSharedEdge: Self.minimumSharedEdge)
+                            ?? start
+                    }
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        draft[index].origin = origin
+                        recenterWorld()
+                    }
                 }
                 dragging = nil
             }
@@ -174,10 +206,22 @@ struct LayoutEditorView: View {
         draft = LayoutEditing.seed(from: store.currentDisplays)
         seed = draft
         initialFingerprint = store.currentFingerprint
-        let union = draft.map(\.frame).reduce(CGRect.null) { $0.union($1) }
-        world = union.isNull
+        let union = draftBounds
+        world =
+            union.isNull
             ? CGRect(x: 0, y: 0, width: 1, height: 1)
             : union.insetBy(dx: -union.width * 0.2, dy: -union.height * 0.2)
+    }
+
+    /// Moves `world` so the draft sits in its center. Its size, and with it the map scale, stays the same.
+    private func recenterWorld() {
+        let union = draftBounds
+        guard !union.isNull else { return }
+        world.origin = CGPoint(x: union.midX - world.width / 2, y: union.midY - world.height / 2)
+    }
+
+    private var draftBounds: CGRect {
+        draft.map(\.frame).reduce(CGRect.null) { $0.union($1) }
     }
 
     private func updateOrigin(_ id: String, to origin: CGPoint) {

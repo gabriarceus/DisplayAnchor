@@ -32,8 +32,10 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     private let config: AppConfig
     private let defaults = UserDefaults.standard
-    private var userDriver: CompactUpdateUserDriver?
+    private var userDriver: DeferredUpdateUserDriver?
     private var updater: SPUUpdater?
+    /// True after a channel change until a check of the new channel starts.
+    /// Results and offers that arrive meanwhile belong to the old channel and are ignored.
     private var needsChannelCheck = false
 
     init(config: AppConfig, updater: SPUUpdater? = nil) {
@@ -58,17 +60,15 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
         return updater.canCheckForUpdates && !updater.sessionInProgress
     }
 
-    /// Builds the updater — deferred out of `init` so it can be its own delegate
-    /// — starts Sparkle's scheduled cycle, and probes the feed once so a pending
-    /// update is known without waiting for the first scheduled check.
-    ///
-    /// Assembled by hand rather than through `SPUStandardUpdaterController`: that
-    /// wrapper reports a misconfigured feed with a modal alert, which an app with
-    /// no windows should never raise. Here the failure is logged and the app runs
-    /// on without an updater.
+    /// Creates and starts the updater, then checks the feed once without UI.
+    /// Does nothing outside an app bundle; a start failure is logged and leaves
+    /// the app without an updater.
     func start() {
         guard updater == nil, Bundle.main.bundleURL.pathExtension == "app" else { return }
-        let userDriver = CompactUpdateUserDriver(config: config) { [weak self] in
+        // Built by hand instead of with SPUStandardUpdaterController, which reports a
+        // misconfigured feed with a modal alert. The updater is created here, not in
+        // init, because it needs `self` as its delegate.
+        let userDriver = DeferredUpdateUserDriver(config: config) { [weak self] in
             self?.needsChannelCheck == false
         }
         let updater = SPUUpdater(
@@ -77,11 +77,6 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
             userDriver: userDriver,
             delegate: self
         )
-        if let legacyFeed = defaults.string(forKey: "SUFeedURL"),
-            legacyFeed.hasPrefix(Self.releasesURL.absoluteString + "/")
-        {
-            updater.clearFeedURLFromUserDefaults()
-        }
         updater.automaticallyChecksForUpdates = config.checkForUpdates
         do {
             try updater.start()
@@ -95,13 +90,13 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
         probe(manual: false)
     }
 
-    /// User-initiated check. Reports its outcome in the settings row rather than
-    /// in a Sparkle window, so the settings screen stays the single surface.
+    /// Checks the feed now and reports the result in `status`, without a Sparkle window.
     func checkNow() {
         probe(manual: true)
     }
 
-    /// Starts confirmation, download, installation, and relaunch through Sparkle.
+    /// Shows the available update in Sparkle's update window, where the user
+    /// chooses to install it, skip it, or be reminded later.
     func install() {
         updater?.checkForUpdates()
     }
@@ -112,6 +107,8 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
         if enabled { probe(manual: false) }
     }
 
+    /// Clears the status and any held offer, then checks the newly selected
+    /// channel as soon as no update session is running.
     func updateChannelChanged() {
         status = .idle
         needsChannelCheck = true
@@ -125,29 +122,8 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
         probe(manual: true)
     }
 
-    func allowedChannels(for updater: SPUUpdater) -> Set<String> {
-        config.updateChannel.allowedChannels
-    }
-
-    func updater(
-        _ updater: SPUUpdater, shouldDownloadReleaseNotesForUpdate updateItem: SUAppcastItem
-    )
-        -> Bool
-    {
-        false
-    }
-
-    func updater(
-        _ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck,
-        error: (any Error)?
-    ) {
-        Task { @MainActor [weak self] in
-            self?.checkSelectedChannelIfPossible()
-        }
-    }
-
     /// Silent feed check: shows no UI of its own and only drives the delegate
-    /// callbacks below. A background probe leaves [status] alone until it has an
+    /// callbacks below. A background probe leaves `status` alone until it has an
     /// answer, so a pending update does not flicker away while re-checking.
     private func probe(manual: Bool) {
         guard let updater, canCheck else { return }
@@ -156,9 +132,8 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
         updater.checkForUpdateInformation()
     }
 
-    /// The pending version if it has not been announced yet, marking it
-    /// announced in the same step. Announcing once per version keeps a schedule
-    /// that re-checks for as long as the app runs from repeating the alert.
+    /// The pending version if it has not been announced yet, and marks it as
+    /// announced. Returns nil for a version that was already announced.
     func consumeUnannouncedUpdate() -> String? {
         guard let version = availableVersion,
             defaults.string(forKey: Self.announcedVersionKey) != version
@@ -168,6 +143,21 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
     }
 
     // MARK: - SPUUpdaterDelegate
+
+    func allowedChannels(for updater: SPUUpdater) -> Set<String> {
+        config.updateChannel.allowedChannels
+    }
+
+    // Release notes are embedded in the feed, so there is nothing to download.
+    func updater(_ updater: SPUUpdater, shouldDownloadReleaseNotesForUpdate updateItem: SUAppcastItem) -> Bool {
+        false
+    }
+
+    func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: (any Error)?) {
+        Task { @MainActor [weak self] in
+            self?.checkSelectedChannelIfPossible()
+        }
+    }
 
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         guard !needsChannelCheck, config.updateChannel.allows(item.channel) else { return }
@@ -179,6 +169,14 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
         guard !needsChannelCheck else { return }
         status = .upToDate
         defaults.removeObject(forKey: Self.announcedVersionKey)
+    }
+
+    // Information-only checks never report a skipped version, so a skip ends the offer.
+    func updater(
+        _ updater: SPUUpdater, userDidMake choice: SPUUserUpdateChoice, forUpdate updateItem: SUAppcastItem,
+        state: SPUUserUpdateState
+    ) {
+        if choice == .skip { status = .upToDate }
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {

@@ -12,8 +12,8 @@ final class LayoutStore: ObservableObject {
     enum MatchState: Equatable {
         case noDisplays
         case noSavedLayout
-        case matches        // current set has a saved profile, and the layout matches it
-        case differs        // current set has a saved profile, but the layout drifted
+        case matches  // current set has a saved profile, and the layout matches it
+        case differs  // current set has a saved profile, but the layout drifted
     }
 
     @Published private(set) var currentDisplays: [DisplaySnapshot] = []
@@ -40,15 +40,12 @@ final class LayoutStore: ObservableObject {
 
     func start() {
         notifier.requestAuthorizationIfNeeded()
-        monitor.settleSeconds = max(1, config.settleSeconds)
+        monitor.settleSeconds = { [config] in config.settleSeconds }
         monitor.onDisplaysSettled = { [weak self] in self?.handleDisplaysSettled() }
         monitor.start()
         refreshCurrentState()
-    }
-
-    /// Re-read the live monitor configuration after settings change.
-    func applySettings() {
-        monitor.settleSeconds = max(1, config.settleSeconds)
+        // Displays configured before launch, as at login, send no further callback.
+        monitor.scheduleSettledCheck()
     }
 
     // MARK: - Derived state
@@ -68,7 +65,9 @@ final class LayoutStore: ObservableObject {
         if snapshot.displays.isEmpty {
             matchState = .noDisplays
         } else if let saved = profiles.profile(for: snapshot.fingerprint) {
-            matchState = DisplayEngine.geometrySignature(snapshot) == DisplayEngine.geometrySignature(saved) ? .matches : .differs
+            matchState =
+                DisplayEngine.geometrySignature(snapshot) == DisplayEngine.geometrySignature(saved)
+                ? .matches : .differs
         } else {
             matchState = .noSavedLayout
         }
@@ -82,21 +81,27 @@ final class LayoutStore: ObservableObject {
         var snapshot = DisplayEngine.snapshotCurrentLayout()
         snapshot.label = label.trimmingCharacters(in: .whitespaces).isEmpty ? defaultLabel(for: snapshot) : label
         guard profiles.save(snapshot) else { return false }
-        Log.restore.notice("saveCurrentLayout: saved '\(snapshot.label, privacy: .public)' fp=\(snapshot.fingerprint, privacy: .public) displays=\(snapshot.displays.count)")
+        Log.restore.notice(
+            "saveCurrentLayout: saved '\(snapshot.label, privacy: .public)' fp=\(snapshot.fingerprint, privacy: .public) displays=\(snapshot.displays.count)"
+        )
         refreshCurrentState()
         return true
     }
 
     func defaultLabel(for profile: LayoutProfile) -> String {
-        config.l("profile_default_label", displayCountText(profile))
+        config.l("profile_default_label", config.localizer.displayCount(profile.displays.count))
     }
 
     func restoreNow() {
         guard let profile = matchedProfile else {
-            Log.restore.notice("restoreNow: no saved profile for current set (fp=\(self.currentFingerprint, privacy: .public)) → unmatched")
+            Log.restore.notice(
+                "restoreNow: no saved profile for current set (fp=\(self.currentFingerprint, privacy: .public)) → unmatched"
+            )
             return
         }
-        Log.restore.notice("restoreNow: manual restore '\(profile.label, privacy: .public)' matchState=\(String(describing: self.matchState), privacy: .public)")
+        Log.restore.notice(
+            "restoreNow: manual restore '\(profile.label, privacy: .public)' matchState=\(String(describing: self.matchState), privacy: .public)"
+        )
         Task { await apply(profile, auto: false) }
     }
 
@@ -118,7 +123,7 @@ final class LayoutStore: ObservableObject {
         guard !snapshot.isMain else { return }
         var displays = currentDisplays
         for index in displays.indices {
-            displays[index].isMain = displays[index].stableID.identityKey == snapshot.stableID.identityKey
+            displays[index].isMain = displays[index].stableID.snapshotKey == snapshot.stableID.snapshotKey
         }
         let profile = LayoutProfile(fingerprint: currentFingerprint, label: "", savedAt: Date(), displays: displays)
         Log.restore.notice("setMainDisplay: '\(snapshot.name, privacy: .public)'")
@@ -136,7 +141,9 @@ final class LayoutStore: ObservableObject {
         Log.restore.notice("rotateDisplay: '\(snapshot.name, privacy: .public)' → \(degrees)°")
         modeRestoreTask?.cancel()
         Task {
-            let result = await performLiveChange { DisplayEngine.setRotation(id, degrees: degrees) ? .applied : .failed("rotation rejected") }
+            let result = await performLiveChange {
+                DisplayEngine.setRotation(id, degrees: degrees) ? .applied : .failed("rotation rejected")
+            }
             guard result == .applied else { return }
 
             modeRestoreTask = Task { @MainActor in
@@ -174,7 +181,8 @@ final class LayoutStore: ObservableObject {
         return result
     }
 
-    private static let manualChangeSnoozeSeconds: TimeInterval = 15 * 60
+    /// How long a pause of automatic restore lasts.
+    static let autoRestorePauseDuration: TimeInterval = 15 * 60
 
     /// Pauses auto-restore after a manual live edit, notifying the user. An
     /// already-active snooze is extended silently, so a single user action that
@@ -182,11 +190,11 @@ final class LayoutStore: ObservableObject {
     private func snoozeAfterManualChange() {
         guard config.autoRestoreEnabled else { return }
         let wasSnoozed = isAutoRestoreSnoozed
-        snoozeAutoRestore(for: Self.manualChangeSnoozeSeconds)
+        snoozeAutoRestore(for: Self.autoRestorePauseDuration)
         guard !wasSnoozed else { return }
         notifier.send(
             title: config.l("notification_paused_title"),
-            body: config.l("notification_paused_body", Int(Self.manualChangeSnoozeSeconds / 60))
+            body: config.l("notification_paused_body", Int(Self.autoRestorePauseDuration / 60))
         )
     }
 
@@ -226,7 +234,9 @@ final class LayoutStore: ObservableObject {
 
     private func handleDisplaysSettled() {
         refreshCurrentState()
-        Log.restore.notice("displaysSettled: fp=\(self.currentFingerprint, privacy: .public) matchState=\(String(describing: self.matchState), privacy: .public) autoRestore=\(self.config.autoRestoreEnabled)")
+        Log.restore.notice(
+            "displaysSettled: fp=\(self.currentFingerprint, privacy: .public) matchState=\(String(describing: self.matchState), privacy: .public) autoRestore=\(self.config.autoRestoreEnabled)"
+        )
         guard config.autoRestoreEnabled, let profile = matchedProfile else {
             Log.restore.debug("displaysSettled: auto-restore skipped (disabled or no saved profile)")
             return
@@ -245,7 +255,9 @@ final class LayoutStore: ObservableObject {
     private func apply(_ profile: LayoutProfile, auto: Bool) async {
         modeRestoreTask?.cancel()
         let result = await monitor.performApplying { await DisplayEngine.applyLayout(profile) }
-        Log.restore.notice("apply(auto: \(auto)): '\(profile.label, privacy: .public)' → \(String(describing: result), privacy: .public)")
+        Log.restore.notice(
+            "apply(auto: \(auto)): '\(profile.label, privacy: .public)' → \(String(describing: result), privacy: .public)"
+        )
 
         switch result {
         case .applied:
@@ -255,7 +267,9 @@ final class LayoutStore: ObservableObject {
             if config.notifyOnRestore {
                 notifier.send(
                     title: config.l("notification_restored_title"),
-                    body: config.l("notification_restored_body", profile.label, displayCountText(profile))
+                    body: config.l(
+                        "notification_restored_body", profile.label,
+                        config.localizer.displayCount(profile.displays.count))
                 )
             }
         case .alreadyMatches:
@@ -277,11 +291,6 @@ final class LayoutStore: ObservableObject {
         }
 
         refreshCurrentState()
-    }
-
-    private func displayCountText(_ profile: LayoutProfile) -> String {
-        let count = profile.displays.count
-        return count == 1 ? config.l("display_count_one", count) : config.l("display_count_other", count)
     }
 
     private func flashRestored() {

@@ -1,7 +1,7 @@
 import Foundation
 
 /// On-disk document of saved layout profiles, keyed by display-set fingerprint.
-/// `version` allows forward migration (e.g. a future window-position extension).
+/// `version` identifies the document format; other versions are never overwritten.
 struct ProfileDocument: Codable {
     var version: Int
     var profiles: [String: LayoutProfile]
@@ -12,7 +12,7 @@ struct ProfileDocument: Codable {
 enum ProfileStoreIssue: Equatable {
     case storageUnavailable
     case unreadableDocument
-    case unsupportedDocumentVersion(Int)
+    case unsupportedDocumentVersion
     case writeFailed
 }
 
@@ -25,8 +25,9 @@ final class ProfileStore: ObservableObject {
 
     private static let currentVersion = 1
     private var fileURL: URL?
-    /// Never overwrite a document produced by a newer app version: doing so
-    /// could discard fields this version does not understand.
+    /// Never overwrite a document this version cannot safely replace: one from a
+    /// newer app version (it may hold unknown fields), or an unreadable one that
+    /// could not be backed up.
     private var writesAreBlocked = false
 
     private let encoder: JSONEncoder = {
@@ -41,12 +42,18 @@ final class ProfileStore: ObservableObject {
         return decoder
     }()
 
-    init() {
-        guard let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+    /// Loads `profiles.json` from `directory`, creating the directory if needed.
+    /// `nil` uses `~/Library/Application Support/DisplayAnchor`.
+    init(directory: URL? = nil) {
+        guard
+            let directory = directory
+                ?? FileManager.default
+                .urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+                .appendingPathComponent("DisplayAnchor", isDirectory: true)
+        else {
             report(.storageUnavailable, "Application Support directory is unavailable")
             return
         }
-        let directory = support.appendingPathComponent("DisplayAnchor", isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             fileURL = directory.appendingPathComponent("profiles.json")
@@ -90,19 +97,25 @@ final class ProfileStore: ObservableObject {
             let document = try decoder.decode(ProfileDocument.self, from: data)
             guard document.version == Self.currentVersion else {
                 writesAreBlocked = true
-                report(.unsupportedDocumentVersion(document.version), "Unsupported profile document version \(document.version)")
+                report(.unsupportedDocumentVersion, "Unsupported profile document version \(document.version)")
                 return
             }
             profiles = document.profiles
         } catch {
-            backupUnreadableDocument(at: fileURL)
-            report(.unreadableDocument, "Could not decode profile document: \(error.localizedDescription)")
+            Log.profiles.error("Could not decode profile document: \(error.localizedDescription, privacy: .public)")
+            if backupUnreadableDocument(at: fileURL) {
+                report(.unreadableDocument, "Starting with an empty profile list")
+            } else {
+                writesAreBlocked = true
+                report(.storageUnavailable, "Profile writes blocked: the unreadable document is the only copy")
+            }
         }
     }
 
     private func commit(_ proposed: [String: LayoutProfile]) -> Bool {
+        // The issue that blocked writes is already reported; keep it visible.
         guard !writesAreBlocked else {
-            report(.unsupportedDocumentVersion(-1), "Refusing to overwrite a profile document from another version")
+            Log.profiles.error("Refusing to overwrite a profile document that could not be loaded safely")
             return false
         }
         guard let fileURL else {
@@ -122,9 +135,9 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    /// Preserves malformed JSON once, then starts with an empty in-memory store.
-    /// A later successful save therefore cannot silently overwrite the only copy.
-    private func backupUnreadableDocument(at fileURL: URL) {
+    /// Moves malformed JSON to a timestamped sibling file. Returns false when the
+    /// move fails, in which case the original file is still the only copy.
+    private func backupUnreadableDocument(at fileURL: URL) -> Bool {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyyMMdd-HHmmss"
@@ -133,8 +146,11 @@ final class ProfileStore: ObservableObject {
         do {
             try FileManager.default.moveItem(at: fileURL, to: backupURL)
             Log.profiles.notice("Moved unreadable profile document to \(backupURL.lastPathComponent, privacy: .public)")
+            return true
         } catch {
-            Log.profiles.error("Could not back up unreadable profile document: \(error.localizedDescription, privacy: .public)")
+            Log.profiles.error(
+                "Could not back up unreadable profile document: \(error.localizedDescription, privacy: .public)")
+            return false
         }
     }
 

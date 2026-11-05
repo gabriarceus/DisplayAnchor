@@ -3,8 +3,9 @@ import Foundation
 import PackageDescription
 
 // Use a sibling MenuBarKit checkout when present (monorepo-style development),
-// otherwise resolve it from GitHub. SwiftPM caches the evaluated manifest, so
-// after adding or removing the sibling run `swift package reset` once.
+// otherwise resolve it from GitHub. SwiftPM caches the evaluated manifest: after
+// adding or removing the sibling, run `swift package purge-cache` and
+// `swift package reset`.
 let useLocalMenuBarKit = FileManager.default.fileExists(
     atPath: Context.packageDirectory + "/../MenuBarKit/Package.swift"
 )
@@ -16,7 +17,7 @@ let package = Package(
     dependencies: [
         useLocalMenuBarKit
             ? .package(path: "../MenuBarKit")
-            : .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.2.0"),
+            : .package(url: "https://github.com/gabriarceus/MenuBarKit.git", from: "1.3.0"),
         // Binary XCFramework: `build.sh` embeds it into the bundle, since a
         // hand-assembled .app gets none of Xcode's copy-frameworks phase.
         .package(url: "https://github.com/sparkle-project/Sparkle.git", from: "2.9.0"),

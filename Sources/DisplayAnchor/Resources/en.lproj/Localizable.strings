@@ -22,12 +22,16 @@
 "settings_auto_restore_toggle" = "Automatically restore on reconnect";
 "settings_auto_restore_description" = "When displays are reconnected and match a saved layout, the saved arrangement is re-applied automatically.";
 "settings_notify_toggle" = "Notify when a layout is restored";
-"settings_settle_label" = "Wait after displays change (s)";
+"settings_settle_label" = "Wait after displays change";
 "settings_settle_description" = "How long to wait for the display configuration to settle before restoring (%d–%d seconds).";
 "settings_launch_at_login" = "Launch at login";
 "settings_launch_hint_unbundled" = "Available only when running the built .app bundle.";
 "settings_launch_hint_approval" = "Approval required: enable it in System Settings → General → Login Items.";
+"settings_launch_hint_not_found" = "Login launch is unavailable: macOS cannot find this app as a login item.";
+"settings_launch_hint_unsupported" = "Login launch is unavailable: macOS reports an unknown login item state.";
+"settings_launch_open_settings" = "Open Login Items";
 "settings_section_updates" = "Updates";
+"settings_menubarkit_version" = "MenuBarKit %@";
 
 /* Updates */
 "updates_current_version" = "Current version";
@@ -42,25 +46,19 @@
 "updates_channel_rc" = "Stable and RC";
 "updates_channel_rc_hint" = "Release candidates may contain bugs. Switching to Stable does not downgrade the installed app.";
 "updates_release_notes" = "Release notes";
-"updates_whats_new" = "What’s new";
-"updates_confirm_title" = "Install version %@?";
-"updates_confirm_message" = "The update will be downloaded and verified. You will be asked to restart when it is ready.";
-"updates_confirm_restart" = "The update is ready. DisplayAnchor will restart to finish installing it.";
-"updates_confirm_install" = "Install";
-"updates_confirm_cancel" = "Cancel";
 
 /* Popover */
 "popover_no_displays" = "No displays detected.";
 "popover_saved_confirmation" = "Saved";
 "popover_paused_until" = "Paused until %@";
 "popover_resume" = "Resume";
-"popover_pause_15" = "Pause 15 min";
+"popover_pause" = "Pause %d min";
 "popover_saved_layouts" = "Saved layouts";
 "popover_empty_hint" = "Arrange your displays, then Save Layout to remember this setup.";
 "popover_last_restore" = "Last restore: %@";
 "popover_edit_layout_hint" = "Edit layout — drag displays to rearrange";
 "popover_resume_hint" = "%d min remaining — click to resume now";
-"popover_pause_hint" = "Suspend automatic restore for 15 minutes";
+"popover_pause_hint" = "Suspend automatic restore for %d minutes";
 "popover_save_layout" = "Save Layout";
 "popover_update_layout" = "Update Layout";
 "popover_status_no_displays" = "No displays detected";
@@ -72,7 +70,9 @@
 "display_details" = "Display details";
 "display_copied" = "Copied to clipboard";
 "display_copy" = "Copy";
+"display_copy_all" = "Copy all";
 "display_copy_hint" = "Copy full diagnostics to the clipboard";
+"display_copy_one_hint" = "Copy this display's diagnostics to the clipboard";
 "display_set_main" = "Set as Main Display";
 "display_rotate" = "Rotate";
 "display_edit_layout" = "Edit Layout…";
@@ -80,6 +80,13 @@
 "display_main" = "main";
 "display_count_one" = "%d display";
 "display_count_other" = "%d displays";
+"display_indistinguishable" = "⚠︎ indistinguishable";
+"display_field_position" = "Position";
+"display_field_mode" = "Mode";
+"display_field_pixels" = "Pixels";
+"display_field_hardware" = "Hardware";
+"display_field_serial" = "Serial";
+"display_hardware_value" = "vendor %@ · model %@ · unit %@";
 
 /* Editor */
 "editor_title" = "Edit layout";
@@ -112,3 +119,23 @@
 "notification_rejected_body" = "macOS rejected the saved “%@” layout.";
 "notification_update_title" = "Update available";
 "notification_update_body" = "DisplayAnchor %@ is available. Open DisplayAnchor to install it.";
+
+/* Tint */
+"tint_blue" = "Blue";
+"tint_purple" = "Purple";
+"tint_pink" = "Pink";
+"tint_red" = "Red";
+"tint_orange" = "Orange";
+"tint_yellow" = "Yellow";
+"tint_green" = "Green";
+"tint_graphite" = "Graphite";
+"tint_teal" = "Teal";
+
+/* Edit menu */
+"menu_edit" = "Edit";
+"menu_undo" = "Undo";
+"menu_redo" = "Redo";
+"menu_cut" = "Cut";
+"menu_copy" = "Copy";
+"menu_paste" = "Paste";
+"menu_select_all" = "Select All";

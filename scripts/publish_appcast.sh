@@ -1,9 +1,12 @@
 #!/bin/bash
+# Merges the appcast given as the first argument into appcast.xml on the updates
+# branch and pushes the branch. Creates the branch on first publication.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel)"
 CURRENT="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+# `git worktree add` needs a path that does not exist yet.
 WORK="$(mktemp -d)"
 rmdir "$WORK"
 TEMP_BRANCH="appcast-publish-$$"

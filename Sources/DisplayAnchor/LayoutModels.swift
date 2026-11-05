@@ -18,22 +18,35 @@ struct StableDisplayID: Codable, Equatable, Sendable {
     var ambiguityOrdinal: Int
 
     /// EDID-stable key used for the display-set fingerprint.
-    var edidKey: String { "\(vendor):\(model):\(serial):\(isBuiltin)" }
+    var edidKey: String { Self.edidKey(vendor: vendor, model: model, serial: serial, isBuiltin: isBuiltin) }
+
+    /// The single format of the EDID key. Saved profiles are keyed by a hash of it,
+    /// so changing the format orphans every saved layout.
+    static func edidKey(vendor: UInt32, model: UInt32, serial: UInt32, isBuiltin: Bool) -> String {
+        "\(vendor):\(model):\(serial):\(isBuiltin)"
+    }
 
     /// Best available per-physical-display identity. The ColorSync UUID is derived
     /// from the full EDID and differs even between same-model units (whose numeric
     /// serial is often 0), so it distinguishes "identical" monitors when present.
     var identityKey: String { uuid ?? edidKey }
+
+    /// Key that is unique among the displays of one snapshot, including displays
+    /// whose `identityKey` is shared: the identity key plus the ambiguity ordinal.
+    var snapshotKey: String { "\(identityKey)#\(ambiguityOrdinal)" }
+
+    /// The serial for display, or "—" when the EDID leaves the numeric serial at 0 (not provided).
+    var serialText: String { serial == 0 ? "—" : String(serial) }
 }
 
 /// Serializable description of a display mode, re-resolved against the live
 /// mode list on restore (a raw `CGDisplayMode` reference is not persistable).
 struct ModeDescriptor: Codable, Equatable, Sendable {
-    var width: Int          // logical points ("looks like" resolution)
+    var width: Int  // logical points ("looks like" resolution)
     var height: Int
-    var pixelWidth: Int     // backing pixels; HiDPI when greater than `width`
+    var pixelWidth: Int  // backing pixels; HiDPI when greater than `width`
     var pixelHeight: Int
-    var refresh: Double     // Hz; 0 means unspecified
+    var refresh: Double  // Hz; 0 means unspecified
     var ioFlags: UInt32
 
     var isHiDPI: Bool { pixelWidth > width }
@@ -43,7 +56,7 @@ struct ModeDescriptor: Codable, Equatable, Sendable {
 struct DisplaySnapshot: Codable, Equatable, Sendable {
     var stableID: StableDisplayID
     var name: String
-    var originX: Int        // global top-left coordinate space
+    var originX: Int  // global top-left coordinate space
     var originY: Int
     var mode: ModeDescriptor
     var isMain: Bool
@@ -63,6 +76,6 @@ struct LayoutProfile: Codable, Equatable, Sendable {
 enum LayoutApplyResult: Equatable, Sendable {
     case applied
     case alreadyMatches
-    case unmatched          // saved displays could not be mapped to the live set
+    case unmatched  // saved displays could not be mapped to the live set
     case failed(String)
 }

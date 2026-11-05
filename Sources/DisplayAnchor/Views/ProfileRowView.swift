@@ -3,6 +3,7 @@ import SwiftUI
 
 /// One saved-layout row: label, display count, relative save time, with inline
 /// rename, delete-with-confirmation, and (for the current set) a Restore button.
+/// While delete waits for confirmation, the row shows only the label and the confirm controls at the same height.
 struct ProfileRowView: View {
     let profile: LayoutProfile
     let isCurrent: Bool
@@ -12,6 +13,7 @@ struct ProfileRowView: View {
     let onDelete: () -> Void
 
     @Environment(\.localizer) private var l
+    @Environment(\.locale) private var locale
 
     @State private var isRenaming = false
     @State private var draftLabel = ""
@@ -25,33 +27,43 @@ struct ProfileRowView: View {
                 .renderingMode(.template)
                 .foregroundStyle(isCurrent ? Color.accentColor : Color.secondary)
 
+            // Both lines stay in the layout and are only hidden, so renaming and the
+            // delete confirmation keep the row height; the rename field covers both lines.
             VStack(alignment: .leading, spacing: 1) {
+                Text(profile.label)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .panelHelp(l("profile_rename_hint"))
+                    .onTapGesture(count: 2, perform: startRenaming)
+                    .opacity(isRenaming ? 0 : 1)
+                Text(
+                    l(
+                        "profile_count_saved", l.displayCount(profile.displays.count),
+                        profile.savedAt.relativeText(locale: locale))
+                )
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .opacity(confirmingDelete || isRenaming ? 0 : 1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .leading) {
                 if isRenaming {
                     TextField(l("profile_name_placeholder"), text: $draftLabel)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.caption)
+                        .font(.subheadline)
+                        .inputChrome(focused: renameFieldFocused)
+                        .onClickOutsideTextInput(isActive: isRenaming, perform: commitRename)
                         .focused($renameFieldFocused)
                         .onSubmit(commitRename)
+                        .onExitCommand(perform: cancelRename)
                         .onChange(of: renameFieldFocused) { _, focused in
                             if !focused { commitRename() }
                         }
-                } else {
-                    Text(profile.label)
-                        .font(.subheadline)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .hoverTip(l("profile_rename_hint"))
-                        .onTapGesture(count: 2, perform: startRenaming)
                 }
-                Text(l("profile_count_saved", countText, relativeDate(profile.savedAt)))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
             }
 
-            Spacer()
-
-            if isCurrent {
+            if isCurrent && !confirmingDelete {
                 Button(l("profile_restore"), action: onRestore)
                     .font(.caption)
                     .buttonStyle(.bordered)
@@ -66,36 +78,39 @@ struct ProfileRowView: View {
                 Button(action: confirmDelete) {
                     Image(systemName: "checkmark")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 .foregroundStyle(.red)
-                .hoverTip(l("profile_confirm_delete_hint"))
+                .accessibilityLabel(l("profile_confirm_delete_hint"))
+                .panelHelp(l("profile_confirm_delete_hint"))
                 Button(action: cancelDeleteConfirmation) {
                     Image(systemName: "xmark")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .hoverTip(l("profile_keep_hint"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(l("profile_keep_hint"))
+                .panelHelp(l("profile_keep_hint"))
             } else {
                 Button(action: startDeleteConfirmation) {
                     Image(systemName: "trash")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .hoverTip(l("profile_delete_hint"))
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(l("profile_delete_hint"))
+                .panelHelp(l("profile_delete_hint"))
             }
         }
         .padding(.vertical, 2)
-    }
-
-    private var countText: String {
-        let count = profile.displays.count
-        return count == 1 ? l("display_count_one", count) : l("display_count_other", count)
     }
 
     private func startRenaming() {
         draftLabel = profile.label
         isRenaming = true
         renameFieldFocused = true
+    }
+
+    private func cancelRename() {
+        isRenaming = false
     }
 
     private func commitRename() {
@@ -105,20 +120,21 @@ struct ProfileRowView: View {
         if !trimmed.isEmpty, trimmed != profile.label { onRename(trimmed) }
     }
 
-    /// Reveals the inline confirm and auto-reverts after a few seconds, so a stray
-    /// trash click clears itself without deleting anything.
+    /// Reveals the inline confirm, which hides the subtitle and Restore, and
+    /// auto-reverts after 5 seconds without deleting anything. The swap is not
+    /// animated: a fade would overlap the outgoing and incoming controls.
     private func startDeleteConfirmation() {
-        withAnimation { confirmingDelete = true }
+        confirmingDelete = true
         confirmDeleteTask?.cancel()
         confirmDeleteTask = Task {
-            try? await Task.sleep(for: .seconds(3))
-            if !Task.isCancelled { withAnimation { confirmingDelete = false } }
+            try? await Task.sleep(for: .seconds(5))
+            if !Task.isCancelled { confirmingDelete = false }
         }
     }
 
     private func cancelDeleteConfirmation() {
         confirmDeleteTask?.cancel()
-        withAnimation { confirmingDelete = false }
+        confirmingDelete = false
     }
 
     private func confirmDelete() {
@@ -127,9 +143,4 @@ struct ProfileRowView: View {
         onDelete()
     }
 
-    private func relativeDate(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
-    }
 }

@@ -1,43 +1,40 @@
 # Agent context
 
-DisplayAnchor is a macOS menu bar app for saving and restoring display arrangements.
-Use this file as the entry point for project work. Read the relevant documents below
-before exploring the source; each topic has one main home.
+DisplayAnchor is a macOS menu bar app for saving and restoring display arrangements. Use this file as the entry point for project work. Read the relevant documents below before exploring the source; each topic has one main home.
 
 ## Read by task
 
-| Task                                             | Read                                                                     |
-| ------------------------------------------------ | ------------------------------------------------------------------------ |
-| Any project change                               | [Architecture](docs/architecture.md) and [Contributing](CONTRIBUTING.md) |
-| Building, testing, UI, or translations           | [Development](docs/development.md)                                       |
-| Installation, settings, or user-visible behavior | [User guide](docs/user-guide.md)                                         |
-| Packaging, updates, signing, or publishing       | [Releases](docs/releases.md)                                             |
+| Task                                                   | Read                                                                     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Any project change                                     | [Architecture](docs/architecture.md) and [Contributing](CONTRIBUTING.md) |
+| Writing or reviewing Swift code                        | [Swift style](docs/swift-style.md)                                       |
+| Writing comments, documentation, changelog, or commits | [Writing guide](docs/writing-guide.md)                                   |
+| Building, testing, UI, or translations                 | [Development](docs/development.md)                                       |
+| Installation, settings, or user-visible behavior       | [User guide](docs/user-guide.md)                                         |
+| Packaging, updates, signing, or publishing             | [Releases](docs/releases.md)                                             |
 
-The architecture guide maps responsibilities to source files and explains the display
-flow. The development guide maps tests and describes checks that need a real Mac.
+Most tasks match more than one row: a code change usually needs Architecture, Swift style, and the Writing guide. The architecture guide maps responsibilities to source files and explains the display flow. The development guide maps tests and describes checks that need a real Mac.
 
 ## Project decisions
 
-- Saving a layout is always a user action. Reconnect events and restores must preserve
-  the saved layout rather than replace it with the current arrangement.
-- Keep the app focused on display configuration. Window placement, accounts, and
-  telemetry are outside its scope.
-- Preserve the non-sandboxed app and ad-hoc signing baseline. See the architecture
-  and release guides for the reasons and update constraints.
-- Reuse MenuBarKit for shared panel behavior, UI components, notifications, and
-  localization. Check the package before adding a shared helper to this repository.
+- Saving a layout is always a user action. Reconnect events and restores must preserve the saved layout rather than replace it with the current arrangement.
+- Keep the app focused on display configuration. Window placement, accounts, and telemetry are outside its scope.
+- Preserve the non-sandboxed app and ad-hoc signing baseline. See the architecture and release guides for the reasons and update constraints.
+- Reuse MenuBarKit for shared panel behavior, UI components, notifications, and localization. Check the package before adding a shared helper to this repository.
 
-## Documentation maintenance
+## Boundaries
 
-Keep README.md as a short introduction with links. Put user instructions in the user
-guide, technical concepts and file ownership in architecture, local workflow in
-development, and distribution details in releases.
+- Build and release files are the source of truth for executable steps. Reading release guidance does not authorize publishing, pushing, tagging, or accessing signing credentials.
+- Never inspect or presence-check signing keys or other credentials.
+- Do not change MenuBarKit from this repository. When a change belongs there (a shared component, a panel or localization behavior, a bug in the package), stop and tell the owner before writing code, and do not build a local copy here instead.
+- Without a Mac and real displays, source inspection is not a runtime test. Say which checks remain unrun.
 
-Write project documentation in plain English. Document concepts, constraints, and
-source locations; avoid code samples, copied declarations, and command blocks. Read
-the linked source for implementation details. When a change affects a documented
-concept or moves a file, update its owning document and the relevant links.
+## Before you finish
 
-Record notable changes under Unreleased in [CHANGELOG.md](CHANGELOG.md). Build and
-release files are the source of truth for executable steps. Reading release guidance
-does not authorize publishing, pushing, tagging, or accessing signing credentials.
+- Run `swift test`. Run the Python release-tool tests when you change scripts/.
+- Format the Swift files you changed with `swift format -i`, and check that `swift format lint --recursive --strict Package.swift Sources Tests` is clean.
+- Read every comment you added or changed against the [Writing guide](docs/writing-guide.md): a contract or a reason, no history.
+- Update the owning document when a documented concept, setting, or file changes.
+- Add one entry under Unreleased in [CHANGELOG.md](CHANGELOG.md), written for users, or under Maintenance when users do not notice the change.
+- Leave no temporary notes, debug output, or test artifacts in code or documentation.
+- List the manual hardware checks that the change needs and that you did not run.
