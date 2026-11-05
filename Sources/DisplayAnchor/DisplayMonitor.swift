@@ -22,12 +22,6 @@ final class DisplayMonitor {
         registered = (result == .success)
     }
 
-    func stop() {
-        guard registered else { return }
-        CGDisplayRemoveReconfigurationCallback(Self.callback, Unmanaged.passUnretained(self).toOpaque())
-        registered = false
-    }
-
     /// Runs `work` with reconfiguration events suppressed and returns its result.
     /// Suppression lasts until one second after the last overlapping call returns.
     func performApplying<T>(_ work: () async -> T) async -> T {
