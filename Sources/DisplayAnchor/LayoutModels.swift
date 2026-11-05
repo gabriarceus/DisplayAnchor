@@ -34,6 +34,9 @@ struct StableDisplayID: Codable, Equatable, Sendable {
     /// Key that is unique among the displays of one snapshot, including displays
     /// whose `identityKey` is shared: the identity key plus the ambiguity ordinal.
     var snapshotKey: String { "\(identityKey)#\(ambiguityOrdinal)" }
+
+    /// The serial for display, or "—" when the EDID leaves the numeric serial at 0 (not provided).
+    var serialText: String { serial == 0 ? "—" : String(serial) }
 }
 
 /// Serializable description of a display mode, re-resolved against the live

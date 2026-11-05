@@ -26,6 +26,7 @@ Most tasks match more than one row: a code change usually needs Architecture, Sw
 
 - Build and release files are the source of truth for executable steps. Reading release guidance does not authorize publishing, pushing, tagging, or accessing signing credentials.
 - Never inspect or presence-check signing keys or other credentials.
+- Do not change MenuBarKit from this repository. When a change belongs there (a shared component, a panel or localization behavior, a bug in the package), stop and tell the owner before writing code, and do not build a local copy here instead.
 - Without a Mac and real displays, source inspection is not a runtime test. Say which checks remain unrun.
 
 ## Before you finish

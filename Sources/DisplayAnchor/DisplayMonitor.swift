@@ -9,7 +9,8 @@ import os
 @MainActor
 final class DisplayMonitor {
     var onDisplaysSettled: (() -> Void)?
-    var settleSeconds: Int = 3
+    /// Quiet period, in seconds, read when each change arrives. Values below 1 count as 1.
+    var settleSeconds: @MainActor () -> Int = { 3 }
 
     /// Number of `performApplying` calls whose suppression window is still open.
     private var activeApplyCount = 0
@@ -44,7 +45,7 @@ final class DisplayMonitor {
         }
     }
 
-    private func handleReconfiguration(flags: CGDisplayChangeSummaryFlags) {
+    func handleReconfiguration(flags: CGDisplayChangeSummaryFlags) {
         if activeApplyCount > 0 {
             Log.monitor.debug("reconfiguration ignored (own configuration change in progress)")
             return
@@ -55,7 +56,7 @@ final class DisplayMonitor {
             return
         }
 
-        let quiet = max(1, settleSeconds)
+        let quiet = max(1, settleSeconds())
         Log.monitor.debug("reconfiguration flags=\(flags.rawValue) → debounce \(quiet)s")
         debounceTask?.cancel()
         debounceTask = Task { @MainActor in

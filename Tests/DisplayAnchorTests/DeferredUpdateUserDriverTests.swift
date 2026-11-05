@@ -55,7 +55,8 @@ struct DeferredUpdateUserDriverTests {
     }
 }
 
-private final class ScheduledUpdateDecoder: NSCoder {
+/// Decodes an `SPUUserUpdateState` for an update found by a scheduled check, not yet downloaded.
+final class ScheduledUpdateDecoder: NSCoder {
     override var allowsKeyedCoding: Bool { true }
     override func decodeInteger(forKey key: String) -> Int {
         SPUUserUpdateStage.notDownloaded.rawValue

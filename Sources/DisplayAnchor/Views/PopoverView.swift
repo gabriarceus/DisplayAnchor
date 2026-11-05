@@ -74,7 +74,14 @@ struct PopoverView: View {
                         DisplayDetailView(
                             displays: store.currentDisplays,
                             ambiguousKeys: store.ambiguousIdentityKeys,
-                            onCopyDiagnostics: copyDiagnostics
+                            onCopyDiagnostics: { copyToPasteboard(store.diagnosticsText()) },
+                            onCopyDisplay: { display in
+                                copyToPasteboard(
+                                    DisplayEngine.diagnosticsText(
+                                        for: display,
+                                        isAmbiguous: store.ambiguousIdentityKeys.contains(display.stableID.identityKey))
+                                )
+                            }
                         )
                         Divider()
                     }
@@ -160,14 +167,15 @@ struct PopoverView: View {
                 .controlSize(.small)
                 .hoverTip(l("popover_resume_hint", minutesRemaining(until: until)))
             } else {
+                let minutes = Int(LayoutStore.autoRestorePauseDuration / 60)
                 Button {
                     store.snoozeAutoRestore(for: LayoutStore.autoRestorePauseDuration)
                 } label: {
-                    Label(l("popover_pause_15"), systemImage: "pause.circle")
+                    Label(l("popover_pause", minutes), systemImage: "pause.circle")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .hoverTip(l("popover_pause_hint"))
+                .hoverTip(l("popover_pause_hint", minutes))
             }
         }
     }
@@ -274,9 +282,9 @@ struct PopoverView: View {
         }
     }
 
-    private func copyDiagnostics() {
+    private func copyToPasteboard(_ text: String) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(store.diagnosticsText(), forType: .string)
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     private func timeString(_ date: Date) -> String {

@@ -34,14 +34,15 @@ Existing tests use Swift Testing and live in [Tests/DisplayAnchorTests](../Tests
 | ----------------------------------- | ------------------------------------------------------------------------------ |
 | LayoutModelsTests.swift             | EDID key format and the pinned display-set fingerprint                         |
 | ProfileStoreTests.swift             | Reload, corrupt-file backup, blocked writes, and failed-write recovery         |
-| LocalizationTests.swift             | Same keys and format specifiers in every bundled language                      |
+| LocalizationTests.swift             | Same keys and format specifiers in every bundled language, and display counts  |
 | DisplayGeometryTests.swift          | Translation and order independence, drift detection, and ambiguous identities  |
 | DisplayMapGeometryTests.swift       | Scaling, centering, adjacency, negative coordinates, and mixed orientations    |
 | LayoutEditingTests.swift            | Snapping, overlap resolution, draft conversion, and indistinguishable displays |
 | DisplayCountIconTests.swift         | Template rendering and display-count bounds                                    |
-| UpdateControllerTests.swift         | No-update completion and update-check error handling                           |
+| UpdateControllerTests.swift         | No-update completion, update-check error handling, and skipped versions        |
 | UpdateChannelTests.swift            | Stable defaults, persisted opt-in, channel filtering, and stale RC responses   |
 | DeferredUpdateUserDriverTests.swift | Silent scheduled offers, single dismissal, and channel filtering of offers     |
+| DisplayMonitorTests.swift           | Event suppression while overlapping display changes of the app are applied     |
 
 Display writes and callback timing need real hardware. Select manual checks that exercise the changed behavior:
 

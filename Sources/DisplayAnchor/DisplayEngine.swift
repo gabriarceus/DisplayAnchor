@@ -402,6 +402,7 @@ enum DisplayEngine {
             Log.engine.notice("setMode: display \(id) → \(mode.width)x\(mode.height)")
             return .applied
         }
+        Log.engine.error("setMode: CGCompleteDisplayConfiguration failed (\(error.rawValue)) for display \(id)")
         return .failed("CGCompleteDisplayConfiguration error \(error.rawValue)")
     }
 
@@ -515,19 +516,23 @@ enum DisplayEngine {
         ]
         for d in profile.displays {
             lines.append("")
-            lines.append("• \(d.name)\(d.isMain ? " [MAIN]" : "")")
-            let hz = d.mode.refresh > 0 ? "\(Int(d.mode.refresh.rounded()))Hz" : "—"
+            lines.append(diagnosticsText(for: d, isAmbiguous: ambiguous.contains(d.stableID.identityKey)))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// Diagnostics block for one display: name, geometry, mode, hardware identity, and UUID.
+    static func diagnosticsText(for d: DisplaySnapshot, isAmbiguous: Bool) -> String {
+        let hz = d.mode.refresh > 0 ? "\(Int(d.mode.refresh.rounded()))Hz" : "—"
+        var lines = [
+            "• \(d.name)\(d.isMain ? " [MAIN]" : "")",
+            "  origin (\(d.originX), \(d.originY)) · \(d.mode.width)x\(d.mode.height) pt · \(d.mode.pixelWidth)x\(d.mode.pixelHeight) px\(d.mode.isHiDPI ? " (HiDPI)" : "") · \(hz) · rot \(Int(d.rotation))°",
+            "  vendor \(d.stableID.vendor) · model \(d.stableID.model) · serial \(d.stableID.serialText) · unit \(d.stableID.unitNumber)",
+            "  uuid \(d.stableID.uuid ?? "—")",
+        ]
+        if isAmbiguous {
             lines.append(
-                "  origin (\(d.originX), \(d.originY)) · \(d.mode.width)x\(d.mode.height) pt · \(d.mode.pixelWidth)x\(d.mode.pixelHeight) px\(d.mode.isHiDPI ? " (HiDPI)" : "") · \(hz) · rot \(Int(d.rotation))°"
-            )
-            lines.append(
-                "  vendor \(d.stableID.vendor) · model \(d.stableID.model) · serial \(d.stableID.serial) · unit \(d.stableID.unitNumber)"
-            )
-            lines.append("  uuid \(d.stableID.uuid ?? "—")")
-            if ambiguous.contains(d.stableID.identityKey) {
-                lines.append(
-                    "  ⚠️ indistinguishable from another connected display (ordinal \(d.stableID.ambiguityOrdinal))")
-            }
+                "  ⚠️ indistinguishable from another connected display (ordinal \(d.stableID.ambiguityOrdinal))")
         }
         return lines.joined(separator: "\n")
     }

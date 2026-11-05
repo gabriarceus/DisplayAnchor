@@ -37,18 +37,9 @@ struct DisplayMapView: View {
 
     @ViewBuilder
     private func displayRect(_ display: DisplaySnapshot, size: CGSize) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 4)
-        shape
-            .fill(display.isMain ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.12))
-            .overlay(
-                shape.strokeBorder(
-                    display.isMain ? Color.accentColor : Color.secondary.opacity(0.5),
-                    lineWidth: display.isMain ? 1.5 : 1
-                )
-            )
+        DisplayTile(isMain: display.isMain, fillOpacity: 0.12, borderOpacity: 0.5, mainBorderWidth: 1.5)
             .overlay(label(for: display, in: size))
             .overlay(alignment: .topTrailing) { rotationBadge(for: display, in: size) }
-            .contentShape(shape)
             .optionalContextMenu(hasMenu) { menuContent(for: display) }
     }
 

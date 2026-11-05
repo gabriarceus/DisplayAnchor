@@ -38,8 +38,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         panel.onDismiss = { [weak self] in
             guard let self else { return }
-            // Leaving settings via an outside click still applies the settle interval.
-            if self.navigation.screen == .settings { self.store?.applySettings() }
             self.navigation.screen = .main
             self.lastPanelDismiss = Date()
         }

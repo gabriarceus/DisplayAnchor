@@ -35,7 +35,7 @@ Save Layout creates a profile for a new display set. Update Layout replaces the 
 - The editor is available with two or more displays. Drag displays to rearrange them; they snap to neighboring edges and cannot overlap. Right-click to select the main display. Apply changes the real arrangement; Cancel discards the draft.
 - The pause control suspends automatic restore for 15 minutes. Successful main-display, rotation, or editor changes also pause it and notify you, so restore does not undo your edit immediately. The control appears when automatic restore is enabled.
 - Saved-layout rows let you restore the current set, double-click a name to rename it, or delete with a two-step confirmation.
-- Expand Display details to view model, serial, vendor, unit, and UUID. Copy exports the diagnostics to the clipboard. An indistinguishable badge flags ambiguous hardware.
+- Expand Display details to view position, mode, pixel size, hardware identifiers, serial, and UUID. A dash means the monitor does not report the value. Copy all exports the diagnostics of all displays to the clipboard; the Copy button that appears over a single display copies only that display. An indistinguishable badge flags ambiguous hardware.
 - The footer provides Settings and Quit.
 
 Small rectangles in the menu bar icon, title, and saved rows reflect the display count, up to four. The menu bar icon briefly becomes a checkmark after restoration and shows an exclamation mark when the current arrangement differs from the saved one.

@@ -45,7 +45,6 @@ struct PanelRootView: View {
             )
         case .settings:
             SettingsView(config: store.config, notifier: store.notifier, updates: updates) {
-                store.applySettings()
                 navigation.screen = .main
             }
         case .editLayout:

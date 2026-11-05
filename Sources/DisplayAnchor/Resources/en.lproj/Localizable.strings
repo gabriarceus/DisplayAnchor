@@ -48,13 +48,13 @@
 "popover_saved_confirmation" = "Saved";
 "popover_paused_until" = "Paused until %@";
 "popover_resume" = "Resume";
-"popover_pause_15" = "Pause 15 min";
+"popover_pause" = "Pause %d min";
 "popover_saved_layouts" = "Saved layouts";
 "popover_empty_hint" = "Arrange your displays, then Save Layout to remember this setup.";
 "popover_last_restore" = "Last restore: %@";
 "popover_edit_layout_hint" = "Edit layout — drag displays to rearrange";
 "popover_resume_hint" = "%d min remaining — click to resume now";
-"popover_pause_hint" = "Suspend automatic restore for 15 minutes";
+"popover_pause_hint" = "Suspend automatic restore for %d minutes";
 "popover_save_layout" = "Save Layout";
 "popover_update_layout" = "Update Layout";
 "popover_status_no_displays" = "No displays detected";
@@ -66,7 +66,9 @@
 "display_details" = "Display details";
 "display_copied" = "Copied to clipboard";
 "display_copy" = "Copy";
+"display_copy_all" = "Copy all";
 "display_copy_hint" = "Copy full diagnostics to the clipboard";
+"display_copy_one_hint" = "Copy this display's diagnostics to the clipboard";
 "display_set_main" = "Set as Main Display";
 "display_rotate" = "Rotate";
 "display_edit_layout" = "Edit Layout…";
@@ -75,8 +77,12 @@
 "display_count_one" = "%d display";
 "display_count_other" = "%d displays";
 "display_indistinguishable" = "⚠︎ indistinguishable";
-"display_identity_line" = "model %u · serial %u · vendor %u · unit %u";
-"display_position_line" = "pos (%d, %d) · %@";
+"display_field_position" = "Position";
+"display_field_mode" = "Mode";
+"display_field_pixels" = "Pixels";
+"display_field_hardware" = "Hardware";
+"display_field_serial" = "Serial";
+"display_hardware_value" = "vendor %@ · model %@ · unit %@";
 
 /* Editor */
 "editor_title" = "Edit layout";

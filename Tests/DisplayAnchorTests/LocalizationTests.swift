@@ -1,4 +1,5 @@
 import Foundation
+import MenuBarKit
 import Testing
 
 @testable import DisplayAnchor
@@ -30,5 +31,22 @@ struct LocalizationTests {
     /// Conversion characters of the format specifiers, ignoring positional order.
     private func specifiers(_ format: String) -> [Character] {
         format.matches(of: /%(?:\d+\$)?[0-9.]*([@a-zA-Z])/).compactMap { $0.output.1.first }.sorted()
+    }
+}
+
+struct LocalizedTextTests {
+    @Test(arguments: [
+        ("en", 1, "1 display"), ("en", 3, "3 displays"), ("it", 1, "1 schermo"), ("it", 3, "3 schermi"),
+    ])
+    func displayCountUsesThePluralKeyOfEachLanguage(language: String, count: Int, expected: String) {
+        let localizer = Localizer(bundle: .appResources, language: language)
+        #expect(localizer.displayCount(count) == expected)
+    }
+
+    @Test func relativeTextFollowsTheLocale() {
+        let hourAgo = Date().addingTimeInterval(-3600)
+        #expect(
+            hourAgo.relativeText(locale: Locale(identifier: "en"))
+                != hourAgo.relativeText(locale: Locale(identifier: "it")))
     }
 }

@@ -48,13 +48,13 @@
 "popover_saved_confirmation" = "Salvato";
 "popover_paused_until" = "In pausa fino alle %@";
 "popover_resume" = "Riprendi";
-"popover_pause_15" = "Pausa 15 min";
+"popover_pause" = "Pausa %d min";
 "popover_saved_layouts" = "Layout salvati";
 "popover_empty_hint" = "Disponi gli schermi, poi salva il layout per ricordare questa configurazione.";
 "popover_last_restore" = "Ultimo ripristino: %@";
 "popover_edit_layout_hint" = "Modifica layout — trascina gli schermi per riorganizzarli";
 "popover_resume_hint" = "%d min rimanenti — fai clic per riprendere";
-"popover_pause_hint" = "Sospendi il ripristino automatico per 15 minuti";
+"popover_pause_hint" = "Sospendi il ripristino automatico per %d minuti";
 "popover_save_layout" = "Salva layout";
 "popover_update_layout" = "Aggiorna layout";
 "popover_status_no_displays" = "Nessuno schermo rilevato";
@@ -66,7 +66,9 @@
 "display_details" = "Dettagli schermo";
 "display_copied" = "Copiato negli appunti";
 "display_copy" = "Copia";
+"display_copy_all" = "Copia tutto";
 "display_copy_hint" = "Copia la diagnostica completa negli appunti";
+"display_copy_one_hint" = "Copia negli appunti la diagnostica di questo schermo";
 "display_set_main" = "Imposta come schermo principale";
 "display_rotate" = "Ruota";
 "display_edit_layout" = "Modifica layout…";
@@ -75,8 +77,12 @@
 "display_count_one" = "%d schermo";
 "display_count_other" = "%d schermi";
 "display_indistinguishable" = "⚠︎ indistinguibile";
-"display_identity_line" = "modello %u · seriale %u · produttore %u · unità %u";
-"display_position_line" = "pos. (%d, %d) · %@";
+"display_field_position" = "Posizione";
+"display_field_mode" = "Modalità";
+"display_field_pixels" = "Pixel";
+"display_field_hardware" = "Hardware";
+"display_field_serial" = "Seriale";
+"display_hardware_value" = "produttore %@ · modello %@ · unità %@";
 
 /* Editor */
 "editor_title" = "Modifica layout";

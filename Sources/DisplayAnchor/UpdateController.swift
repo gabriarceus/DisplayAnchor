@@ -171,6 +171,14 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
         defaults.removeObject(forKey: Self.announcedVersionKey)
     }
 
+    // Information-only checks never report a skipped version, so a skip ends the offer.
+    func updater(
+        _ updater: SPUUpdater, userDidMake choice: SPUUserUpdateChoice, forUpdate updateItem: SUAppcastItem,
+        state: SPUUserUpdateState
+    ) {
+        if choice == .skip { status = .upToDate }
+    }
+
     func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
         guard !needsChannelCheck else { return }
         let nsError = error as NSError

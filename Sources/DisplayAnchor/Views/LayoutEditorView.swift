@@ -98,17 +98,8 @@ struct LayoutEditorView: View {
     /// hit region stays at the pre-offset position and right-clicks miss.
     @ViewBuilder
     private func displayRect(_ display: DraftDisplay, size: CGSize) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 4)
-        shape
-            .fill(display.isMain ? Color.accentColor.opacity(0.22) : Color.secondary.opacity(0.14))
-            .overlay(
-                shape.strokeBorder(
-                    display.isMain ? Color.accentColor : Color.secondary.opacity(0.6),
-                    lineWidth: display.isMain ? 2 : 1
-                )
-            )
+        DisplayTile(isMain: display.isMain, fillOpacity: 0.14, borderOpacity: 0.6, mainBorderWidth: 2)
             .overlay(label(for: display, in: size))
-            .contentShape(shape)
             .contextMenu {
                 Button(l("display_set_main")) { setMain(display.id) }
                     .disabled(display.isMain)

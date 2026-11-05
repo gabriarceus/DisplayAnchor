@@ -4,9 +4,14 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- In Display details, a Copy button appears when the pointer is over a display and copies the diagnostics of that display only. The button for every display is now called Copy all.
+
 ### Changed
 
 - Dates, display details, and tint names follow the language selected in the app. The built-in display shows the name macOS gives it.
+- Display details list each value on its own labeled line. Hardware identifiers are no longer formatted like quantities, and a serial number the monitor does not report shows "—" instead of 0, also in copied diagnostics.
 - The update window shows what is new in the latest three versions, with formatted headings and lists, and lets you install the update, skip the version, or be reminded later.
 
 ### Fixed
@@ -15,11 +20,13 @@ All notable changes to this project will be documented in this file. The format 
 - Automatic restore no longer reacts to the app's own display changes when two of them overlap, for example a restore during a rotation.
 - In the layout editor, two monitors that macOS cannot tell apart can be moved and made the main display separately.
 - Rotating one of two same-model monitors with different serial numbers no longer rotates the other one.
+- Skipping a version in the update window removes the update indicator right away.
 
 ### Maintenance
 
 - Added the Swift style and writing guides, a swift-format configuration, and a format check that runs with the tests for pull requests and releases.
 - Release notes are built as Markdown from this changelog and leave out Maintenance entries.
+- Added tests for event suppression during the app's own display changes, for display counts, and for skipped updates. A failed resolution change is logged.
 - Removed the per-release appcast assets and the feed-override cleanup for release candidates 1 and 2.
 - The release workflow is the only publication path. It runs the tests and stops when the tag does not match Info.plist or the release already exists; release.sh checks the version and pushes the tag.
 

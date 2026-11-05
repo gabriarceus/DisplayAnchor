@@ -40,15 +40,10 @@ final class LayoutStore: ObservableObject {
 
     func start() {
         notifier.requestAuthorizationIfNeeded()
-        monitor.settleSeconds = max(1, config.settleSeconds)
+        monitor.settleSeconds = { [config] in config.settleSeconds }
         monitor.onDisplaysSettled = { [weak self] in self?.handleDisplaysSettled() }
         monitor.start()
         refreshCurrentState()
-    }
-
-    /// Passes the current settle interval to the display monitor.
-    func applySettings() {
-        monitor.settleSeconds = max(1, config.settleSeconds)
     }
 
     // MARK: - Derived state
