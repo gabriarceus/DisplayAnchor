@@ -147,21 +147,24 @@ struct LayoutEditorView: View {
                     dragging = (hit.id, hit.origin)
                 }
                 guard let (id, start) = dragging,
-                      let display = draft.first(where: { $0.id == id }) else { return }
+                    let display = draft.first(where: { $0.id == id })
+                else { return }
                 let moved = CGPoint(
                     x: start.x + map.displayLength(value.translation.width),
                     y: start.y + map.displayLength(value.translation.height)
                 )
                 let others = otherFrames(excluding: id)
-                let snapped = LayoutEditing.snap(CGRect(origin: moved, size: display.size),
-                                                 among: others, threshold: map.displayLength(10))
+                let snapped = LayoutEditing.snap(
+                    CGRect(origin: moved, size: display.size),
+                    among: others, threshold: map.displayLength(10))
                 updateOrigin(id, to: snapped)
             }
             .onEnded { _ in
                 if let id = dragging?.id, let index = draft.firstIndex(where: { $0.id == id }) {
                     let others = otherFrames(excluding: id)
                     var origin = LayoutEditing.snap(draft[index].frame, among: others, threshold: map.displayLength(10))
-                    origin = LayoutEditing.resolveOverlap(CGRect(origin: origin, size: draft[index].size), among: others)
+                    origin = LayoutEditing.resolveOverlap(
+                        CGRect(origin: origin, size: draft[index].size), among: others)
                     draft[index].origin = origin
                 }
                 dragging = nil
@@ -175,7 +178,8 @@ struct LayoutEditorView: View {
         seed = draft
         initialFingerprint = store.currentFingerprint
         let union = draft.map(\.frame).reduce(CGRect.null) { $0.union($1) }
-        world = union.isNull
+        world =
+            union.isNull
             ? CGRect(x: 0, y: 0, width: 1, height: 1)
             : union.insetBy(dx: -union.width * 0.2, dy: -union.height * 0.2)
     }

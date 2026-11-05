@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DisplayAnchor
 
 struct LocalizationTests {
@@ -20,8 +21,9 @@ struct LocalizationTests {
     }
 
     private func table(_ language: String) throws -> [String: String] {
-        let url = try #require(Bundle.appResources.url(
-            forResource: "Localizable", withExtension: "strings", subdirectory: nil, localization: language))
+        let url = try #require(
+            Bundle.appResources.url(
+                forResource: "Localizable", withExtension: "strings", subdirectory: nil, localization: language))
         return try #require(NSDictionary(contentsOf: url) as? [String: String])
     }
 

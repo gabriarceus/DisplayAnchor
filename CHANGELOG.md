@@ -1,25 +1,27 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The update window shows these notes without the Maintenance entries.
 
 ## [Unreleased]
 
 ### Changed
 
-- Dates, display details, and tint names follow the selected language. The built-in display shows the system's name for it.
-- The release workflow is the only publication path. It runs the Swift tests and stops when the tag does not match Info.plist or the release already exists; release.sh now checks the version and pushes the tag.
+- Dates, display details, and tint names follow the language selected in the app. The built-in display shows the name macOS gives it.
+- The update window shows what is new in the latest three versions, with formatted headings and lists, and lets you install the update, skip the version, or be reminded later.
 
 ### Fixed
 
 - An unreadable saved-layouts file that cannot be backed up is no longer overwritten by the next save.
+- Automatic restore no longer reacts to the app's own display changes when two of them overlap, for example a restore during a rotation.
+- In the layout editor, two monitors that macOS cannot tell apart can be moved and made the main display separately.
 - Rotating one of two same-model monitors with different serial numbers no longer rotates the other one.
 
-### Removed
+### Maintenance
 
-- Per-release appcast assets and the feed-override cleanup for release candidates 1 and 2.
+- Added the Swift style and writing guides, a swift-format configuration, and a format check that runs with the tests for pull requests and releases.
+- Release notes are built as Markdown from this changelog and leave out Maintenance entries.
+- Removed the per-release appcast assets and the feed-override cleanup for release candidates 1 and 2.
+- The release workflow is the only publication path. It runs the tests and stops when the tag does not match Info.plist or the release already exists; release.sh checks the version and pushes the tag.
 
 ## [1.1.0] - 2026-11-04
 
@@ -33,36 +35,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Install replaces the manual Download link, with a compact confirmation and a scrollable changelog when release notes are available.
-- Raised the minimum MenuBarKit version to 1.2.0.
-- Release tooling publishes a shared Stable/RC appcast, preserves archive signatures, and rejects reused build numbers. Candidate releases are marked as prereleases.
-- Shortened the README and moved usage, architecture, development, and release guidance into dedicated documents.
 - Update checks run silently at launch and every six hours. Manual checks remain available when automatic checks are disabled.
 
 ### Fixed
 
-- Switching update channels during an active session waits for completion and checks the latest selection without getting stuck on Checking.
-- Up-to-date checks no longer show a failed result after Sparkle completes the check.
+- Switching update channels during an active check waits for it to finish and checks the latest selection without getting stuck on Checking.
+- Up-to-date checks no longer show a failed result.
+
+### Maintenance
+
+- Raised the minimum MenuBarKit version to 1.2.0.
+- Release tooling publishes a shared Stable/RC appcast, preserves archive signatures, and rejects reused build numbers. Candidate releases are marked as prereleases.
+- Shortened the README and moved usage, architecture, development, and release guidance into dedicated documents.
 
 ### Removed
 
-- Custom GitHub release polling and the outdated Gatekeeper hint in update settings.
+- The previous update check based on GitHub releases, and the outdated Gatekeeper hint in update settings.
 
 ## [1.0.1] - 2026-08-20
 
 ### Added
 
-- GitHub Actions CI/CD workflow to build and release universal binaries.
-- Universal 2 Binary build (`arm64` + `x86_64`) supporting both Apple Silicon and Intel Macs natively.
+- Native support for both Apple Silicon and Intel Macs in one app.
 
 ### Fixed
 
-- Fixed residual references to the old name "Display Layout" in the popover header and menu bar status item accessibility descriptions.
+- The panel header and the menu bar icon description no longer use the old name "Display Layout".
+
+### Maintenance
+
+- GitHub Actions workflow that builds and releases Universal 2 binaries (`arm64` and `x86_64`).
 
 ## [1.0.0] - 2026-08-11
 
 ### Added
 
-- Automatic and manual display layout restoration on display reconnect / dock replug.
-- Background update checker for GitHub Releases.
+- Automatic and manual restore of the display layout when displays or a dock reconnect.
+- Background check for new releases on GitHub.
 - Initial release of DisplayAnchor.
-- Menu bar popover with display minimap, status badge, and multi-display arrangement editor.
+- Menu bar panel with a display mini-map, a status badge, and a multi-display arrangement editor.

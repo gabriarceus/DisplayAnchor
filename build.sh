@@ -43,7 +43,6 @@ if [[ -f "$ICON_SRC" ]]; then
 	sips -z 512 512   "$ICON_SRC" --out "$ICONSET/icon_256x256@2x.png" >/dev/null
 	sips -z 512 512   "$ICON_SRC" --out "$ICONSET/icon_512x512.png"    >/dev/null
 	sips -z 1024 1024 "$ICON_SRC" --out "$ICONSET/icon_512x512@2x.png" >/dev/null
-	mkdir -p "$APP/Contents/Resources"
 	iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 	echo "Embedded app icon from $ICON_SRC"
 else

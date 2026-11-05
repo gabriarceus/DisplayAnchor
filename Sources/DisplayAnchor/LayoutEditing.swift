@@ -12,7 +12,7 @@ struct DraftDisplay: Identifiable, Equatable {
     let size: CGSize
     var isMain: Bool
 
-    var id: String { stableID.identityKey }
+    var id: String { stableID.snapshotKey }
     var frame: CGRect { CGRect(origin: origin, size: size) }
 }
 
@@ -53,15 +53,15 @@ enum LayoutEditing {
 
         for other in others {
             // Horizontal: come flush to a side, or align left/right edges.
-            considerX(other.maxX)                     // dragged.left  == other.right
-            considerX(other.minX - dragged.width)     // dragged.right == other.left
-            considerX(other.minX)                     // left edges aligned
-            considerX(other.maxX - dragged.width)     // right edges aligned
+            considerX(other.maxX)  // dragged.left  == other.right
+            considerX(other.minX - dragged.width)  // dragged.right == other.left
+            considerX(other.minX)  // left edges aligned
+            considerX(other.maxX - dragged.width)  // right edges aligned
             // Vertical: come flush above/below, or align top/bottom edges.
-            considerY(other.maxY)                     // dragged.top    == other.bottom
-            considerY(other.minY - dragged.height)    // dragged.bottom == other.top
-            considerY(other.minY)                     // top edges aligned
-            considerY(other.maxY - dragged.height)    // bottom edges aligned
+            considerY(other.maxY)  // dragged.top    == other.bottom
+            considerY(other.minY - dragged.height)  // dragged.bottom == other.top
+            considerY(other.minY)  // top edges aligned
+            considerY(other.maxY - dragged.height)  // bottom edges aligned
         }
 
         return CGPoint(x: bestX?.value ?? dragged.minX, y: bestY?.value ?? dragged.minY)
@@ -87,9 +87,9 @@ enum LayoutEditing {
     /// rotation from the matching base snapshots and overriding origin + isMain.
     /// Displays whose identity is missing from `base` are dropped.
     static func profile(from draft: [DraftDisplay], base: [DisplaySnapshot], fingerprint: String) -> LayoutProfile {
-        let byIdentity = Dictionary(base.map { ($0.stableID.identityKey, $0) }, uniquingKeysWith: { first, _ in first })
+        let byKey = Dictionary(base.map { ($0.stableID.snapshotKey, $0) }, uniquingKeysWith: { first, _ in first })
         let displays: [DisplaySnapshot] = draft.compactMap { d in
-            guard var snapshot = byIdentity[d.stableID.identityKey] else { return nil }
+            guard var snapshot = byKey[d.id] else { return nil }
             snapshot.originX = Int(d.origin.x.rounded())
             snapshot.originY = Int(d.origin.y.rounded())
             snapshot.isMain = d.isMain

@@ -56,7 +56,7 @@ struct DisplayDetailView: View {
 
     private func copy() {
         onCopyDiagnostics()
-        justCopied = true // appears immediately
+        justCopied = true  // appears immediately
         copiedTask?.cancel()
         copiedTask = Task {
             try? await Task.sleep(for: .seconds(1))
@@ -75,9 +75,13 @@ struct DisplayDetailView: View {
             Text(geometryLine(display))
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
-            Text(l("display_identity_line", display.stableID.model, display.stableID.serial, display.stableID.vendor, display.stableID.unitNumber))
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+            Text(
+                l(
+                    "display_identity_line", display.stableID.model, display.stableID.serial, display.stableID.vendor,
+                    display.stableID.unitNumber)
+            )
+            .font(.system(size: 10))
+            .foregroundStyle(.secondary)
             Text("uuid \(display.stableID.uuid ?? "—")")
                 .font(.system(size: 9, design: .monospaced))
                 .foregroundStyle(.tertiary)
@@ -96,7 +100,8 @@ struct DisplayDetailView: View {
     private func geometryLine(_ display: DisplaySnapshot) -> String {
         let hz = display.mode.refresh > 0 ? "\(Int(display.mode.refresh.rounded()))Hz" : "—"
         let hiDPI = display.mode.isHiDPI ? " · HiDPI" : ""
-        let size = "\(display.mode.width)×\(display.mode.height) pt · \(display.mode.pixelWidth)×\(display.mode.pixelHeight) px\(hiDPI) · \(hz)"
+        let size =
+            "\(display.mode.width)×\(display.mode.height) pt · \(display.mode.pixelWidth)×\(display.mode.pixelHeight) px\(hiDPI) · \(hz)"
         return l("display_position_line", display.originX, display.originY, size)
     }
 

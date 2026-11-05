@@ -42,12 +42,6 @@
 "updates_channel_rc" = "Stable and RC";
 "updates_channel_rc_hint" = "Release candidates may contain bugs. Switching to Stable does not downgrade the installed app.";
 "updates_release_notes" = "Release notes";
-"updates_whats_new" = "What’s new";
-"updates_confirm_title" = "Install version %@?";
-"updates_confirm_message" = "The update will be downloaded and verified. You will be asked to restart when it is ready.";
-"updates_confirm_restart" = "The update is ready. DisplayAnchor will restart to finish installing it.";
-"updates_confirm_install" = "Install";
-"updates_confirm_cancel" = "Cancel";
 
 /* Popover */
 "popover_no_displays" = "No displays detected.";

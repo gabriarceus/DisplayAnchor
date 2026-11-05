@@ -6,10 +6,11 @@ import Foundation
 import IOKit
 import os
 
-/// Pure CoreGraphics/ColorSync wrapper that reads the current display
-/// arrangement, applies a saved one, and computes the display-set fingerprint.
-/// Stateless: every entry point reads live data. Functions that resolve display
-/// names touch `NSScreen` and are therefore main-actor isolated.
+/// Reads the current display arrangement through CoreGraphics and ColorSync,
+/// applies a saved one (CoreGraphics configuration plus IOKit rotation), and
+/// computes the display-set fingerprint. Stateless: every entry point reads live
+/// data. Functions that resolve display names read `NSScreen` and are main-actor
+/// isolated.
 enum DisplayEngine {
 
     // MARK: - Enumeration
@@ -98,11 +99,13 @@ enum DisplayEngine {
         let ordinals = ambiguityOrdinals(for: ids)
         let displays: [DisplaySnapshot] = ids.map { id in
             let bounds = CGDisplayBounds(id)
-            let descriptor = CGDisplayCopyDisplayMode(id).map(modeDescriptor) ?? ModeDescriptor(
-                width: Int(bounds.width), height: Int(bounds.height),
-                pixelWidth: Int(bounds.width), pixelHeight: Int(bounds.height),
-                refresh: 0, ioFlags: 0
-            )
+            let descriptor =
+                CGDisplayCopyDisplayMode(id).map(modeDescriptor)
+                ?? ModeDescriptor(
+                    width: Int(bounds.width), height: Int(bounds.height),
+                    pixelWidth: Int(bounds.width), pixelHeight: Int(bounds.height),
+                    refresh: 0, ioFlags: 0
+                )
             let mirrorMaster = CGDisplayMirrorsDisplay(id)
             return DisplaySnapshot(
                 stableID: stableID(for: id, ambiguityOrdinal: ordinals[id] ?? 0),
@@ -160,7 +163,8 @@ enum DisplayEngine {
         return profile.displays.map { d in
             let relX = d.originX - main.originX
             let relY = d.originY - main.originY
-            return "\(d.stableID.identityKey)|\(relX),\(relY)|main:\(d.isMain)|\(d.mode.width)x\(d.mode.height)@\(d.mode.pixelWidth)x\(d.mode.pixelHeight)|rot:\(Int(d.rotation.rounded()))"
+            return
+                "\(d.stableID.identityKey)|\(relX),\(relY)|main:\(d.isMain)|\(d.mode.width)x\(d.mode.height)@\(d.mode.pixelWidth)x\(d.mode.pixelHeight)|rot:\(Int(d.rotation.rounded()))"
         }.sorted()
     }
 
@@ -174,11 +178,15 @@ enum DisplayEngine {
     @MainActor
     static func applyLayout(_ profile: LayoutProfile) async -> LayoutApplyResult {
         let liveIDs = activeDisplayIDs()
-        Log.engine.debug("applyLayout: '\(profile.label, privacy: .public)' fp=\(profile.fingerprint, privacy: .public) saved=\(profile.displays.count) live=\(liveIDs.count)")
+        Log.engine.debug(
+            "applyLayout: '\(profile.label, privacy: .public)' fp=\(profile.fingerprint, privacy: .public) saved=\(profile.displays.count) live=\(liveIDs.count)"
+        )
         let liveOrdinals = ambiguityOrdinals(for: liveIDs)
         for id in liveIDs {
             let o = CGDisplayBounds(id).origin
-            Log.engine.debug("live id=\(id) uuid=\(uuidString(for: id) ?? "—", privacy: .public) unit=\(CGDisplayUnitNumber(id)) ord=\(liveOrdinals[id] ?? -1) edid=\(edidKey(id), privacy: .public) main=\(CGDisplayIsMain(id) != 0) origin=(\(Int(o.x)),\(Int(o.y)))")
+            Log.engine.debug(
+                "live id=\(id) uuid=\(uuidString(for: id) ?? "—", privacy: .public) unit=\(CGDisplayUnitNumber(id)) ord=\(liveOrdinals[id] ?? -1) edid=\(edidKey(id), privacy: .public) main=\(CGDisplayIsMain(id) != 0) origin=(\(Int(o.x)),\(Int(o.y)))"
+            )
         }
         guard !liveIDs.isEmpty else {
             Log.engine.notice("applyLayout: no live displays → unmatched")
@@ -236,7 +244,8 @@ enum DisplayEngine {
         // 2. Modes (skip mirrored slaves — their mode follows the master).
         for entry in matched where entry.snapshot.mirrorOfUUID == nil {
             if let mode = bestMode(for: entry.id, descriptor: entry.snapshot.mode),
-               CGConfigureDisplayWithDisplayMode(config, entry.id, mode, nil) != .success {
+                CGConfigureDisplayWithDisplayMode(config, entry.id, mode, nil) != .success
+            {
                 return cancel("CGConfigureDisplayWithDisplayMode failed")
             }
         }
@@ -251,12 +260,15 @@ enum DisplayEngine {
             let current = CGDisplayBounds(entry.id).origin
             // Re-setting the current origin can hang the call for seconds; skip no-ops.
             if Int32(current.x.rounded()) != targetX || Int32(current.y.rounded()) != targetY {
-                Log.engine.debug("applyLayout: move '\(entry.snapshot.name, privacy: .public)' (\(Int(current.x)),\(Int(current.y))) → (\(targetX),\(targetY))")
+                Log.engine.debug(
+                    "applyLayout: move '\(entry.snapshot.name, privacy: .public)' (\(Int(current.x)),\(Int(current.y))) → (\(targetX),\(targetY))"
+                )
                 if CGConfigureDisplayOrigin(config, entry.id, targetX, targetY) != .success {
                     return cancel("CGConfigureDisplayOrigin failed")
                 }
             } else {
-                Log.engine.debug("applyLayout: '\(entry.snapshot.name, privacy: .public)' already at (\(targetX),\(targetY)) — skip")
+                Log.engine.debug(
+                    "applyLayout: '\(entry.snapshot.name, privacy: .public)' already at (\(targetX),\(targetY)) — skip")
             }
         }
 
@@ -271,43 +283,61 @@ enum DisplayEngine {
 
     private struct MatchedDisplay { let snapshot: DisplaySnapshot; let id: CGDirectDisplayID }
 
-    /// Maps every saved display to a distinct live display (UUID → EDID → ordinal).
-    /// Returns nil if any saved display cannot be matched.
+    /// Maps every saved display to a distinct live display with
+    /// `match(_:among:ordinals:)`. Returns nil if any saved display cannot be matched.
     private static func resolve(profile: LayoutProfile, liveIDs: [CGDirectDisplayID]) -> [MatchedDisplay]? {
         let ordinals = ambiguityOrdinals(for: liveIDs)
         var remaining = liveIDs
         var matched: [MatchedDisplay] = []
 
         for snapshot in profile.displays {
-            // 1. Exact UUID match.
-            if let uuid = snapshot.stableID.uuid,
-               let index = remaining.firstIndex(where: { uuidString(for: $0) == uuid }) {
-                Log.engine.debug("resolve: saved '\(snapshot.name, privacy: .public)' (ord \(snapshot.stableID.ambiguityOrdinal)) → live id=\(remaining[index]) unit=\(CGDisplayUnitNumber(remaining[index])) via UUID")
-                matched.append(MatchedDisplay(snapshot: snapshot, id: remaining[index]))
-                remaining.remove(at: index)
-                continue
-            }
-            // 2. EDID match (vendor/model/serial/builtin).
-            let candidateIndices = remaining.indices.filter { edidKey(remaining[$0]) == snapshot.stableID.edidKey }
-            guard !candidateIndices.isEmpty else {
-                Log.engine.notice("resolve: no live display matches saved '\(snapshot.name, privacy: .public)' edid=\(snapshot.stableID.edidKey, privacy: .public)")
+            guard let (id, method) = match(snapshot, among: remaining, ordinals: ordinals) else {
+                Log.engine.notice(
+                    "resolve: no live display matches saved '\(snapshot.name, privacy: .public)' edid=\(snapshot.stableID.edidKey, privacy: .public)"
+                )
                 return nil
             }
-            if candidateIndices.count == 1 {
-                let index = candidateIndices[0]
-                Log.engine.debug("resolve: saved '\(snapshot.name, privacy: .public)' → live id=\(remaining[index]) via EDID (unique)")
-                matched.append(MatchedDisplay(snapshot: snapshot, id: remaining[index]))
-                remaining.remove(at: index)
-                continue
-            }
-            // 3. Ambiguous group: prefer the matching ordinal, else the first candidate.
-            let chosen = candidateIndices.first { (ordinals[remaining[$0]] ?? 0) == snapshot.stableID.ambiguityOrdinal }
-                ?? candidateIndices[0]
-            Log.engine.notice("resolve: saved '\(snapshot.name, privacy: .public)' AMBIGUOUS (ord \(snapshot.stableID.ambiguityOrdinal)) → live id=\(remaining[chosen]) unit=\(CGDisplayUnitNumber(remaining[chosen])) ord=\(ordinals[remaining[chosen]] ?? -1) via ORDINAL")
-            matched.append(MatchedDisplay(snapshot: snapshot, id: remaining[chosen]))
-            remaining.remove(at: chosen)
+            // Heuristic matches are kept in the persisted log for bug reports.
+            let level: OSLogType =
+                switch method {
+                case .uuid, .uniqueEDID: .debug
+                case .ambiguityOrdinal, .firstEDID: .default
+                }
+            Log.engine.log(
+                level: level,
+                "resolve: saved '\(snapshot.name, privacy: .public)' (ord \(snapshot.stableID.ambiguityOrdinal)) → live id=\(id) unit=\(CGDisplayUnitNumber(id)) ord=\(ordinals[id] ?? -1) via \(method.rawValue, privacy: .public)"
+            )
+            matched.append(MatchedDisplay(snapshot: snapshot, id: id))
+            remaining.removeAll { $0 == id }
         }
         return matched
+    }
+
+    /// How `match(_:among:ordinals:)` found a live display.
+    private enum MatchMethod: String {
+        case uuid
+        case uniqueEDID
+        case ambiguityOrdinal
+        case firstEDID
+    }
+
+    /// The display in `ids` that matches `snapshot`: the same ColorSync UUID first,
+    /// then the only display with the same EDID, then the same-EDID display with the
+    /// same ambiguity ordinal, then the first same-EDID display. Nil when no display
+    /// has the same EDID.
+    private static func match(
+        _ snapshot: DisplaySnapshot, among ids: [CGDirectDisplayID], ordinals: [CGDirectDisplayID: Int]
+    ) -> (id: CGDirectDisplayID, method: MatchMethod)? {
+        if let uuid = snapshot.stableID.uuid, let id = ids.first(where: { uuidString(for: $0) == uuid }) {
+            return (id, .uuid)
+        }
+        let candidates = ids.filter { edidKey($0) == snapshot.stableID.edidKey }
+        guard let first = candidates.first else { return nil }
+        if candidates.count == 1 { return (first, .uniqueEDID) }
+        if let id = candidates.first(where: { (ordinals[$0] ?? 0) == snapshot.stableID.ambiguityOrdinal }) {
+            return (id, .ambiguityOrdinal)
+        }
+        return (first, .firstEDID)
     }
 
     /// Best live mode for a saved descriptor: exact point+pixel match first (in
@@ -338,18 +368,10 @@ enum DisplayEngine {
 
     // MARK: - Live edits
 
-    /// The live display ID currently matching `snapshot`, using the same
-    /// UUID → EDID → ordinal strategy as `resolve`. Nil if none matches.
+    /// The live display ID currently matching `snapshot`, or nil if none matches.
     static func liveID(for snapshot: DisplaySnapshot) -> CGDirectDisplayID? {
         let liveIDs = activeDisplayIDs()
-        if let uuid = snapshot.stableID.uuid,
-           let id = liveIDs.first(where: { uuidString(for: $0) == uuid }) {
-            return id
-        }
-        let ordinals = ambiguityOrdinals(for: liveIDs)
-        let candidates = liveIDs.filter { edidKey($0) == snapshot.stableID.edidKey }
-        if candidates.count == 1 { return candidates[0] }
-        return candidates.first { (ordinals[$0] ?? 0) == snapshot.stableID.ambiguityOrdinal } ?? candidates.first
+        return match(snapshot, among: liveIDs, ordinals: ambiguityOrdinals(for: liveIDs))?.id
     }
 
     /// Applies the best live match for `descriptor` to a single display. Returns
@@ -360,9 +382,10 @@ enum DisplayEngine {
             return .failed("no display mode available")
         }
         if let current = CGDisplayCopyDisplayMode(id),
-           current.width == mode.width, current.height == mode.height,
-           current.pixelWidth == mode.pixelWidth, current.pixelHeight == mode.pixelHeight,
-           current.refreshRate == mode.refreshRate {
+            current.width == mode.width, current.height == mode.height,
+            current.pixelWidth == mode.pixelWidth, current.pixelHeight == mode.pixelHeight,
+            current.refreshRate == mode.refreshRate
+        {
             return .alreadyMatches
         }
         var configRef: CGDisplayConfigRef?
@@ -446,7 +469,10 @@ enum DisplayEngine {
         let model = CGDisplayModelNumber(id)
         let serial = CGDisplaySerialNumber(id)
         var iterator = io_iterator_t()
-        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IODisplayConnect"), &iterator) == KERN_SUCCESS else {
+        guard
+            IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IODisplayConnect"), &iterator)
+                == KERN_SUCCESS
+        else {
             return 0
         }
         defer { IOObjectRelease(iterator) }
@@ -455,10 +481,11 @@ enum DisplayEngine {
         while service != 0 {
             if let info = IODisplayCreateInfoDictionary(service, IOOptionBits(kIODisplayOnlyPreferredName))?
                 .takeRetainedValue() as? [String: Any],
-               (info["DisplayVendorID"] as? NSNumber)?.uint32Value == vendor,
-               (info["DisplayProductID"] as? NSNumber)?.uint32Value == model,
-               // EDIDs without a serial omit the key; CoreGraphics reports them as 0.
-               ((info["DisplaySerialNumber"] as? NSNumber)?.uint32Value ?? 0) == serial {
+                (info["DisplayVendorID"] as? NSNumber)?.uint32Value == vendor,
+                (info["DisplayProductID"] as? NSNumber)?.uint32Value == model,
+                // EDIDs without a serial omit the key; CoreGraphics reports them as 0.
+                ((info["DisplaySerialNumber"] as? NSNumber)?.uint32Value ?? 0) == serial
+            {
                 return service
             }
             IOObjectRelease(service)
@@ -490,11 +517,16 @@ enum DisplayEngine {
             lines.append("")
             lines.append("• \(d.name)\(d.isMain ? " [MAIN]" : "")")
             let hz = d.mode.refresh > 0 ? "\(Int(d.mode.refresh.rounded()))Hz" : "—"
-            lines.append("  origin (\(d.originX), \(d.originY)) · \(d.mode.width)x\(d.mode.height) pt · \(d.mode.pixelWidth)x\(d.mode.pixelHeight) px\(d.mode.isHiDPI ? " (HiDPI)" : "") · \(hz) · rot \(Int(d.rotation))°")
-            lines.append("  vendor \(d.stableID.vendor) · model \(d.stableID.model) · serial \(d.stableID.serial) · unit \(d.stableID.unitNumber)")
+            lines.append(
+                "  origin (\(d.originX), \(d.originY)) · \(d.mode.width)x\(d.mode.height) pt · \(d.mode.pixelWidth)x\(d.mode.pixelHeight) px\(d.mode.isHiDPI ? " (HiDPI)" : "") · \(hz) · rot \(Int(d.rotation))°"
+            )
+            lines.append(
+                "  vendor \(d.stableID.vendor) · model \(d.stableID.model) · serial \(d.stableID.serial) · unit \(d.stableID.unitNumber)"
+            )
             lines.append("  uuid \(d.stableID.uuid ?? "—")")
             if ambiguous.contains(d.stableID.identityKey) {
-                lines.append("  ⚠️ indistinguishable from another connected display (ordinal \(d.stableID.ambiguityOrdinal))")
+                lines.append(
+                    "  ⚠️ indistinguishable from another connected display (ordinal \(d.stableID.ambiguityOrdinal))")
             }
         }
         return lines.joined(separator: "\n")

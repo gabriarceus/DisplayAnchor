@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Testing
+
 @testable import DisplayAnchor
 
 struct LayoutEditingTests {
@@ -12,10 +13,13 @@ struct LayoutEditingTests {
         rotation: Double = 0.0
     ) -> DisplaySnapshot {
         DisplaySnapshot(
-            stableID: StableDisplayID(uuid: uuid, vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0),
+            stableID: StableDisplayID(
+                uuid: uuid, vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0),
             name: uuid,
             originX: Int(origin.x), originY: Int(origin.y),
-            mode: ModeDescriptor(width: Int(size.width), height: Int(size.height), pixelWidth: Int(size.width), pixelHeight: Int(size.height), refresh: 60, ioFlags: 0),
+            mode: ModeDescriptor(
+                width: Int(size.width), height: Int(size.height), pixelWidth: Int(size.width),
+                pixelHeight: Int(size.height), refresh: 60, ioFlags: 0),
             isMain: isMain, mirrorOfUUID: nil, rotation: rotation
         )
     }
@@ -73,8 +77,8 @@ struct LayoutEditingTests {
     }
 
     @Test func snapPicksClosestCandidateAmongMultipleObstacles() {
-        let obstacleLeft = CGRect(x: 0, y: 0, width: 100, height: 100)      // right edge: 100
-        let obstacleRight = CGRect(x: 215, y: 0, width: 100, height: 100)   // left edge: 215
+        let obstacleLeft = CGRect(x: 0, y: 0, width: 100, height: 100)  // right edge: 100
+        let obstacleRight = CGRect(x: 215, y: 0, width: 100, height: 100)  // left edge: 215
 
         // Dragged at x: 103 (distance to left's right edge is 3; distance to right's left edge is 12)
         let dragged = CGRect(x: 103, y: 0, width: 100, height: 100)
@@ -151,7 +155,8 @@ struct LayoutEditingTests {
 
         // Add a rogue draft display not in base
         let rogueDraft = DraftDisplay(
-            stableID: StableDisplayID(uuid: "rogue", vendor: 9, model: 9, serial: 9, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0),
+            stableID: StableDisplayID(
+                uuid: "rogue", vendor: 9, model: 9, serial: 9, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0),
             name: "Rogue",
             origin: .zero,
             size: CGSize(width: 100, height: 100),
@@ -165,9 +170,25 @@ struct LayoutEditingTests {
         #expect(profile.displays[0].originY == 199)
     }
 
+    @Test func indistinguishableDisplaysKeepSeparateDrafts() {
+        var left = display(uuid: "same", isMain: true)
+        var right = display(uuid: "same", origin: CGPoint(x: 1920, y: 0))
+        left.stableID.ambiguityOrdinal = 0
+        right.stableID.ambiguityOrdinal = 1
+        var draft = LayoutEditing.seed(from: [left, right])
+        draft[1].origin = CGPoint(x: 0, y: 1080)
+
+        #expect(Set(draft.map(\.id)).count == 2)
+        let profile = LayoutEditing.profile(from: draft, base: [left, right], fingerprint: "fp")
+        #expect(profile.displays.map(\.originY) == [0, 1080])
+        #expect(profile.displays.map(\.stableID.ambiguityOrdinal) == [0, 1])
+    }
+
     @Test func stableIdentityUsesUUIDBeforeEDIDFallback() {
-        let identified = StableDisplayID(uuid: "uuid", vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0)
-        let fallback = StableDisplayID(uuid: nil, vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0)
+        let identified = StableDisplayID(
+            uuid: "uuid", vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0)
+        let fallback = StableDisplayID(
+            uuid: nil, vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0)
 
         #expect(identified.identityKey == "uuid")
         #expect(fallback.identityKey == "1:2:3:false")

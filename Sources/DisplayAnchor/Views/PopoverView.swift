@@ -9,8 +9,8 @@ struct PopoverView: View {
     static let popoverHeight: CGFloat = 540
 
     @ObservedObject var store: LayoutStore
-    /// Version of a pending update, surfaced as a badge on the settings button —
-    /// a background check the user never sees would be pointless.
+    /// Version of a pending update, shown as a badge on the settings button; nil
+    /// when no update is pending.
     let availableUpdateVersion: String?
     let onOpenSettings: () -> Void
     let onEditLayout: () -> Void
@@ -93,10 +93,12 @@ struct PopoverView: View {
     }
 
     private var header: some View {
-        PanelHeader(title: "DisplayAnchor", leading: {
-            Image(nsImage: DisplayCountIcon.image(displays: store.currentDisplays))
-                .renderingMode(.template)
-        })
+        PanelHeader(
+            title: "DisplayAnchor",
+            leading: {
+                Image(nsImage: DisplayCountIcon.image(displays: store.currentDisplays))
+                    .renderingMode(.template)
+            })
     }
 
     private var statusLine: some View {
@@ -134,8 +136,9 @@ struct PopoverView: View {
                     .foregroundStyle(.green)
                     .lineLimit(1)
             } else if store.config.autoRestoreEnabled,
-                      store.isAutoRestoreSnoozed,
-                      let until = store.autoRestoreSnoozedUntil {
+                store.isAutoRestoreSnoozed,
+                let until = store.autoRestoreSnoozedUntil
+            {
                 Text(l("popover_paused_until", timeString(until)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -158,7 +161,7 @@ struct PopoverView: View {
                 .hoverTip(l("popover_resume_hint", minutesRemaining(until: until)))
             } else {
                 Button {
-                    store.snoozeAutoRestore(for: 15 * 60)
+                    store.snoozeAutoRestore(for: LayoutStore.autoRestorePauseDuration)
                 } label: {
                     Label(l("popover_pause_15"), systemImage: "pause.circle")
                 }
@@ -200,7 +203,7 @@ struct PopoverView: View {
     private var footer: some View {
         HStack {
             if let date = store.lastRestoreAt {
-                Text(l("popover_last_restore", relativeTime(date)))
+                Text(l("popover_last_restore", date.relativeText(locale: locale)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -281,13 +284,6 @@ struct PopoverView: View {
         formatter.locale = locale
         formatter.timeStyle = .short
         return formatter.string(from: date)
-    }
-
-    private func relativeTime(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.locale = locale
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
     }
 
     private func profileStoreIssueText(_ issue: ProfileStoreIssue) -> String {

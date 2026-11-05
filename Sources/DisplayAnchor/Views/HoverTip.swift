@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Hover tooltip with a short appearance delay. Replaces `.help(_:)`, whose
-/// appearance delay is the (slow) system default and not configurable.
-///
-/// The hovered control only publishes the tooltip text and its frame through a
-/// preference; the bubble itself is drawn once at the panel root (see
-/// `hoverTipHost()`), so it escapes any `ScrollView`/container clipping and is
-/// clamped to stay inside the panel.
+// Hover tooltip with a short appearance delay. It replaces `.help(_:)`, whose
+// delay is the slow system default and cannot be configured.
+//
+// The hovered control only publishes the tooltip text and its frame through a
+// preference. The bubble is drawn once at the panel root by `hoverTipHost()`, so
+// it escapes `ScrollView` and container clipping and stays inside the panel.
 
+/// Text and target frame of the tooltip to show.
 struct HoverTipValue: Equatable {
     let text: String
     let anchor: Anchor<CGRect>
@@ -63,11 +63,13 @@ private struct HoverTipBubble: View {
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 5))
             .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.quaternary))
             .fixedSize()
-            .background(GeometryReader { proxy in
-                Color.clear
-                    .onAppear { size = proxy.size }
-                    .onChange(of: proxy.size) { _, newValue in size = newValue }
-            })
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { size = proxy.size }
+                        .onChange(of: proxy.size) { _, newValue in size = newValue }
+                }
+            )
             .position(position)
             .opacity(size == .zero ? 0 : 1)
             .allowsHitTesting(false)

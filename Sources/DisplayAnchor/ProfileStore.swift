@@ -1,7 +1,7 @@
 import Foundation
 
 /// On-disk document of saved layout profiles, keyed by display-set fingerprint.
-/// `version` allows forward migration (e.g. a future window-position extension).
+/// `version` identifies the document format; other versions are never overwritten.
 struct ProfileDocument: Codable {
     var version: Int
     var profiles: [String: LayoutProfile]
@@ -45,9 +45,11 @@ final class ProfileStore: ObservableObject {
     /// Loads `profiles.json` from `directory`, creating the directory if needed.
     /// `nil` uses `~/Library/Application Support/DisplayAnchor`.
     init(directory: URL? = nil) {
-        guard let directory = directory ?? FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("DisplayAnchor", isDirectory: true)
+        guard
+            let directory = directory
+                ?? FileManager.default
+                .urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+                .appendingPathComponent("DisplayAnchor", isDirectory: true)
         else {
             report(.storageUnavailable, "Application Support directory is unavailable")
             return
@@ -146,7 +148,8 @@ final class ProfileStore: ObservableObject {
             Log.profiles.notice("Moved unreadable profile document to \(backupURL.lastPathComponent, privacy: .public)")
             return true
         } catch {
-            Log.profiles.error("Could not back up unreadable profile document: \(error.localizedDescription, privacy: .public)")
+            Log.profiles.error(
+                "Could not back up unreadable profile document: \(error.localizedDescription, privacy: .public)")
             return false
         }
     }

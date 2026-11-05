@@ -148,8 +148,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let gap: CGFloat = 6
 
         if let button = statusItem?.button,
-           let window = button.window,
-           let screen = window.screen ?? NSScreen.main {
+            let window = button.window,
+            let screen = window.screen ?? NSScreen.main
+        {
             let buttonOnScreen = window.convertToScreen(button.convert(button.bounds, to: nil))
             if screen.frame.intersects(buttonOnScreen) {
                 let visible = screen.visibleFrame
@@ -178,7 +179,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             image = NSImage(systemSymbolName: "checkmark.rectangle", accessibilityDescription: "DisplayAnchor")?
                 .withSymbolConfiguration(configuration)
         } else if store.matchState == .differs {
-            image = NSImage(systemSymbolName: "display.trianglebadge.exclamationmark", accessibilityDescription: "DisplayAnchor")?
+            image = NSImage(
+                systemSymbolName: "display.trianglebadge.exclamationmark", accessibilityDescription: "DisplayAnchor")?
                 .withSymbolConfiguration(configuration)
         } else {
             // Steady state: rectangles mirroring the connected displays (main filled).

@@ -30,8 +30,6 @@ Save Layout creates a profile for a new display set. Update Layout replaces the 
 | :-----------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------: |
 | <img src="screenshots/quick-actions.png" alt="Display quick actions for main display, rotation, and editing" width="250"> | <img src="screenshots/layout-editor.png" alt="Drag-and-drop display arrangement editor" width="250"> | <img src="screenshots/settings.png" alt="DisplayAnchor preferences" width="250"> |
 
-The settings image predates the current update controls; see [Updates](#updates).
-
 - The mini-map shows the current arrangement, highlights the main display, and shows rotated displays with their portrait or landscape footprint and rotation angle.
 - Right-click a display to make it the main display, rotate it, or open Edit Layout. Main-display changes preserve relative positions. Rotation supports quarter turns and restores the previous resolution after the rotation settles.
 - The editor is available with two or more displays. Drag displays to rearrange them; they snap to neighboring edges and cannot overlap. Right-click to select the main display. Apply changes the real arrangement; Cancel discards the draft.
@@ -60,7 +58,7 @@ For adding translations, read [Development](development.md#ui-and-localization).
 
 ## Updates
 
-The app integrates Sparkle to check for and install updates. When a newer version is available, a dot appears next to the menu bar icon and on the settings gear, and a notification appears once per version. Choose Install in Settings → Updates to enter a compact Install/Cancel confirmation, followed by Sparkle's download, verification, installation, and relaunch flow. When the release includes notes, the confirmation shows its changelog in a scrollable area. Notes are in English; labels and buttons follow the app language. The link in Settings opens the full release history. The running version is shown in the Settings footer.
+The app integrates Sparkle to check for and install updates. When a newer version is available, a dot appears next to the menu bar icon and on the settings gear, and a notification appears once per version. Choose Install in Settings → Updates to open the update window. It shows what is new in this version and the two previous ones, and lets you install the update, skip this version, or be reminded later. After Install, the app downloads, verifies, and installs the update, then relaunches. Notes are in English; the window follows the macOS language. The link in Settings opens the full release history. The running version is shown in the Settings footer.
 
 Automatic checks run at launch and every six hours without opening an update window. You can disable them and still check manually. Update archives are verified against the public signing key embedded in the app. This depends on a correctly configured signed release; see [Releases](releases.md) for setup and validation details.
 

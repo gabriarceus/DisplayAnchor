@@ -2,9 +2,8 @@
 # Checks the release version and pushes its tag. The tag starts the release
 # workflow, which builds, signs, and publishes the release and the update feed.
 #
-# The tag is derived from CFBundleShortVersionString in Info.plist — the same
-# value the in-app update check compares against — so bump it (and CFBundleVersion,
-# which Launch Services uses to notice the replaced bundle) before running this.
+# The tag is v + CFBundleShortVersionString from Info.plist. Bump it and
+# CFBundleVersion before running this script.
 set -euo pipefail
 cd "$(dirname "$0")"
 

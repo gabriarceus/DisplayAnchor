@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DisplayAnchor
 
 @MainActor
@@ -15,12 +16,15 @@ struct ProfileStoreTests {
             savedAt: Date(timeIntervalSince1970: 1_700_000_000),
             displays: [
                 DisplaySnapshot(
-                    stableID: StableDisplayID(uuid: "u1", vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0),
+                    stableID: StableDisplayID(
+                        uuid: "u1", vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0
+                    ),
                     name: "Display",
                     originX: -1920, originY: 0,
-                    mode: ModeDescriptor(width: 1920, height: 1080, pixelWidth: 3840, pixelHeight: 2160, refresh: 60, ioFlags: 0),
+                    mode: ModeDescriptor(
+                        width: 1920, height: 1080, pixelWidth: 3840, pixelHeight: 2160, refresh: 60, ioFlags: 0),
                     isMain: true, mirrorOfUUID: nil, rotation: 90
-                ),
+                )
             ]
         )
     }

@@ -6,26 +6,27 @@ DisplayAnchor uses AppKit for the menu bar and app lifecycle, SwiftUI for the pa
 
 Paths in this table are relative to [Sources/DisplayAnchor](../Sources/DisplayAnchor). Start with the owner of the behavior you need to change.
 
-| Area                    | Files                                                      | Responsibility                                                                               |
-| ----------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Bootstrap and lifecycle | main.swift, AppDelegate.swift                              | Accessory activation, service wiring, status item, panel, and menu bar indicators            |
-| Settings and resources  | AppConfig.swift, AppResources.swift                        | UserDefaults settings and app resource bundle lookup                                         |
-| Display data            | LayoutModels.swift                                         | Saved identities, mode descriptors, display snapshots, profiles, and apply results           |
-| Display access          | DisplayEngine.swift                                        | Live snapshots, fingerprints, display matching, configuration, rotation, and diagnostics     |
-| Display events          | DisplayMonitor.swift                                       | Reconfiguration callbacks, settle debounce, and suppression of events caused by the app      |
-| Restore policy          | LayoutStore.swift                                          | Current state, saved-layout selection, save/restore actions, live edits, and temporary pause |
-| Persistence             | ProfileStore.swift                                         | Versioned profile document, atomic writes, and storage issues                                |
-| Editor logic            | LayoutEditing.swift                                        | Draft conversion, edge snapping, and overlap resolution                                      |
-| Updates                 | UpdateController.swift, UpdateChannel.swift, CompactUpdateUserDriver.swift | Sparkle lifecycle, channel filtering, silent checks, compact confirmation, and standard installation progress |
-| Logging                 | Log.swift                                                  | Unified log categories for restore, engine, monitor, UI, updates, and profiles               |
-| Panel navigation        | Views/PanelRootView.swift                                  | Navigation between the main panel, settings, and editor; appearance and tint                 |
-| Main panel              | Views/PopoverView.swift, Views/ProfileRowView.swift        | Current-layout summary and saved-layout actions                                              |
-| Display map             | Views/DisplayMapView.swift, Views/DisplayMapGeometry.swift | Mini-map, quick actions, and the coordinate transform shared with the editor                 |
-| Editor UI               | Views/LayoutEditorView.swift                               | Drag interaction and draft apply/cancel controls                                             |
-| Diagnostics UI          | Views/DisplayDetailView.swift                              | Hardware details, copy action, and ambiguous-identity badge                                  |
-| Settings UI             | Views/SettingsView.swift                                   | Preferences, launch at login, and update controls                                            |
-| Small UI helpers        | Views/DisplayCountIcon.swift, Views/HoverTip.swift         | Display-count icon and hover tips                                                            |
-| Translations            | Resources/\*.lproj/Localizable.strings                     | Bundled language tables                                                                      |
+| Area                    | Files                                                                       | Responsibility                                                                                             |
+| ----------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Bootstrap and lifecycle | main.swift, AppDelegate.swift                                               | Accessory activation, service wiring, status item, panel, and menu bar indicators                          |
+| Settings and resources  | AppConfig.swift, AppResources.swift                                         | UserDefaults settings and app resource bundle lookup                                                       |
+| Display data            | LayoutModels.swift                                                          | Saved identities, mode descriptors, display snapshots, profiles, and apply results                         |
+| Display access          | DisplayEngine.swift                                                         | Live snapshots, fingerprints, display matching, configuration, rotation, and diagnostics                   |
+| Display events          | DisplayMonitor.swift                                                        | Reconfiguration callbacks, settle debounce, and suppression of events caused by the app                    |
+| Restore policy          | LayoutStore.swift                                                           | Current state, saved-layout selection, save/restore actions, live edits, and temporary pause               |
+| Persistence             | ProfileStore.swift                                                          | Versioned profile document, atomic writes, and storage issues                                              |
+| Editor logic            | LayoutEditing.swift                                                         | Draft conversion, edge snapping, and overlap resolution                                                    |
+| Updates                 | UpdateController.swift, UpdateChannel.swift, DeferredUpdateUserDriver.swift | Sparkle lifecycle, channel filtering, silent checks, held scheduled offers, and the standard update window |
+| Logging                 | Log.swift                                                                   | Unified log categories for restore, engine, monitor, UI, updates, and profiles                             |
+| Shared text             | LocalizedText.swift                                                         | Display-count text and relative dates shared by views and notifications                                    |
+| Panel navigation        | Views/PanelRootView.swift                                                   | Navigation between the main panel, settings, and editor; appearance and tint                               |
+| Main panel              | Views/PopoverView.swift, Views/ProfileRowView.swift                         | Current-layout summary and saved-layout actions                                                            |
+| Display map             | Views/DisplayMapView.swift, Views/DisplayMapGeometry.swift                  | Mini-map, quick actions, and the coordinate transform shared with the editor                               |
+| Editor UI               | Views/LayoutEditorView.swift                                                | Drag interaction and draft apply/cancel controls                                                           |
+| Diagnostics UI          | Views/DisplayDetailView.swift                                               | Hardware details, copy action, and ambiguous-identity badge                                                |
+| Settings UI             | Views/SettingsView.swift                                                    | Preferences, launch at login, and update controls                                                          |
+| Small UI helpers        | Views/DisplayCountIcon.swift, Views/HoverTip.swift                          | Display-count icon and hover tips                                                                          |
+| Translations            | Resources/\*.lproj/Localizable.strings                                      | Bundled language tables                                                                                    |
 
 External dependencies are declared in [Package.swift](../Package.swift). [MenuBarKit](https://github.com/gabriarceus/MenuBarKit) owns reusable panel chrome, navigation, design tokens, controls, notifications, and localization. [Sparkle](https://github.com/sparkle-project/Sparkle) owns update feed handling, signature validation, download, installation, and relaunch.
 

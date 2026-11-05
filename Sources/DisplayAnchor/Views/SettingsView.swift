@@ -4,7 +4,7 @@ import ServiceManagement
 import SwiftUI
 
 /// Settings form. Toggles write through to UserDefaults immediately; the settle
-/// interval is re-applied to the monitor when leaving the screen via [onBack].
+/// interval is re-applied to the monitor when leaving the screen via `onBack`.
 /// The panel resizes to fit the whole form; scrolling (without indicators) kicks
 /// in only when the content is taller than the screen.
 struct SettingsView: View {

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DisplayAnchor
 
 /// Saved profiles are keyed by the display-set fingerprint. These tests pin its

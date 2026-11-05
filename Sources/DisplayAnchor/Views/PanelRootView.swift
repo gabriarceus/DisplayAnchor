@@ -8,9 +8,8 @@ enum PanelScreen {
     case editLayout
 }
 
-/// Root content of the panel: swaps between the main view and settings in place,
-/// so everything lives in a single panel instead of a separate window. Chrome is
-/// provided by [PanelChrome] since the hosting window is borderless and transparent.
+/// Root content of the panel: shows the main view, settings, or the layout editor
+/// in place, inside `PanelChrome`, with the selected tint, language, and locale.
 struct PanelRootView: View {
     @ObservedObject var store: LayoutStore
     @ObservedObject var config: AppConfig

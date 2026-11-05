@@ -3,8 +3,9 @@ import Foundation
 import PackageDescription
 
 // Use a sibling MenuBarKit checkout when present (monorepo-style development),
-// otherwise resolve it from GitHub. SwiftPM caches the evaluated manifest, so
-// after adding or removing the sibling run `swift package reset` once.
+// otherwise resolve it from GitHub. SwiftPM caches the evaluated manifest: after
+// adding or removing the sibling, run `swift package purge-cache` and
+// `swift package reset`.
 let useLocalMenuBarKit = FileManager.default.fileExists(
     atPath: Context.packageDirectory + "/../MenuBarKit/Package.swift"
 )

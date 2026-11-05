@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import DisplayAnchor
 
 struct DisplayGeometryTests {
@@ -95,11 +96,13 @@ struct DisplayGeometryTests {
     @Test func geometrySignatureDetectsMainDisplayChange() {
         let display1Main = makeDisplay(uuid: "d1", originX: 0, originY: 0, isMain: true)
         let display2Side = makeDisplay(uuid: "d2", originX: 1920, originY: 0, isMain: false)
-        let profile1 = LayoutProfile(fingerprint: "fp", label: "1", savedAt: Date(), displays: [display1Main, display2Side])
+        let profile1 = LayoutProfile(
+            fingerprint: "fp", label: "1", savedAt: Date(), displays: [display1Main, display2Side])
 
         let display1Side = makeDisplay(uuid: "d1", originX: -1920, originY: 0, isMain: false)
         let display2Main = makeDisplay(uuid: "d2", originX: 0, originY: 0, isMain: true)
-        let profile2 = LayoutProfile(fingerprint: "fp", label: "2", savedAt: Date(), displays: [display1Side, display2Main])
+        let profile2 = LayoutProfile(
+            fingerprint: "fp", label: "2", savedAt: Date(), displays: [display1Side, display2Main])
 
         #expect(DisplayEngine.geometrySignature(profile1) != DisplayEngine.geometrySignature(profile2))
     }
@@ -109,19 +112,25 @@ struct DisplayGeometryTests {
         let display2Landscape = makeDisplay(uuid: "d2", originX: 1920, originY: 0, isMain: false, rotation: 0)
         let display2Portrait = makeDisplay(uuid: "d2", originX: 1920, originY: 0, isMain: false, rotation: 90)
 
-        let profileLandscape = LayoutProfile(fingerprint: "fp", label: "L", savedAt: Date(), displays: [display1, display2Landscape])
-        let profilePortrait = LayoutProfile(fingerprint: "fp", label: "P", savedAt: Date(), displays: [display1, display2Portrait])
+        let profileLandscape = LayoutProfile(
+            fingerprint: "fp", label: "L", savedAt: Date(), displays: [display1, display2Landscape])
+        let profilePortrait = LayoutProfile(
+            fingerprint: "fp", label: "P", savedAt: Date(), displays: [display1, display2Portrait])
 
         #expect(DisplayEngine.geometrySignature(profileLandscape) != DisplayEngine.geometrySignature(profilePortrait))
     }
 
     @Test func geometrySignatureDetectsResolutionOrHiDPIChange() {
         let display1 = makeDisplay(uuid: "d1", originX: 0, originY: 0, isMain: true)
-        let standardMode = makeDisplay(uuid: "d2", originX: 1920, originY: 0, width: 1920, height: 1080, pixelWidth: 1920, pixelHeight: 1080)
-        let retinaMode = makeDisplay(uuid: "d2", originX: 1920, originY: 0, width: 1920, height: 1080, pixelWidth: 3840, pixelHeight: 2160)
+        let standardMode = makeDisplay(
+            uuid: "d2", originX: 1920, originY: 0, width: 1920, height: 1080, pixelWidth: 1920, pixelHeight: 1080)
+        let retinaMode = makeDisplay(
+            uuid: "d2", originX: 1920, originY: 0, width: 1920, height: 1080, pixelWidth: 3840, pixelHeight: 2160)
 
-        let profileStandard = LayoutProfile(fingerprint: "fp", label: "Std", savedAt: Date(), displays: [display1, standardMode])
-        let profileRetina = LayoutProfile(fingerprint: "fp", label: "Ret", savedAt: Date(), displays: [display1, retinaMode])
+        let profileStandard = LayoutProfile(
+            fingerprint: "fp", label: "Std", savedAt: Date(), displays: [display1, standardMode])
+        let profileRetina = LayoutProfile(
+            fingerprint: "fp", label: "Ret", savedAt: Date(), displays: [display1, retinaMode])
 
         #expect(DisplayEngine.geometrySignature(profileStandard) != DisplayEngine.geometrySignature(profileRetina))
     }
@@ -135,7 +144,8 @@ struct DisplayGeometryTests {
         let display1 = makeDisplay(uuid: "d1", originX: 100, originY: 200, isMain: false)
         let display2 = makeDisplay(uuid: "d2", originX: 2020, originY: 200, isMain: false)
 
-        let profile = LayoutProfile(fingerprint: "fp", label: "NoMain", savedAt: Date(), displays: [display1, display2])
+        let profile = LayoutProfile(
+            fingerprint: "fp", label: "NoMain", savedAt: Date(), displays: [display1, display2])
         let sig = DisplayEngine.geometrySignature(profile)
         #expect(sig.count == 2)
         #expect(sig.contains { $0.contains("d1|0,0|main:false") })

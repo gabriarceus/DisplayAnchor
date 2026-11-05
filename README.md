@@ -21,6 +21,7 @@ Requires **macOS 26 or later**. Releases support **Apple Silicon and Intel**. Th
 - [Development](docs/development.md) — building, testing, and translations
 - [Architecture](docs/architecture.md) — source map and display behavior
 - [Releases](docs/releases.md) — packaging, signing, and updates
+- [Swift style](docs/swift-style.md) · [Writing guide](docs/writing-guide.md) — conventions for code and documentation
 - [Contributing and support](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 - [Agent context](AGENTS.md) — starting point for AI agents
 

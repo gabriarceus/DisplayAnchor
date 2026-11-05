@@ -44,10 +44,14 @@ struct ProfileRowView: View {
                         .hoverTip(l("profile_rename_hint"))
                         .onTapGesture(count: 2, perform: startRenaming)
                 }
-                Text(l("profile_count_saved", countText, relativeDate(profile.savedAt)))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                Text(
+                    l(
+                        "profile_count_saved", l.displayCount(profile.displays.count),
+                        profile.savedAt.relativeText(locale: locale))
+                )
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             }
 
             Spacer()
@@ -88,11 +92,6 @@ struct ProfileRowView: View {
         .padding(.vertical, 2)
     }
 
-    private var countText: String {
-        let count = profile.displays.count
-        return count == 1 ? l("display_count_one", count) : l("display_count_other", count)
-    }
-
     private func startRenaming() {
         draftLabel = profile.label
         isRenaming = true
@@ -128,10 +127,4 @@ struct ProfileRowView: View {
         onDelete()
     }
 
-    private func relativeDate(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.locale = locale
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
-    }
 }

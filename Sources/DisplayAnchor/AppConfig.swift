@@ -92,7 +92,7 @@ final class AppConfig: ObservableObject {
     /// Localizer resolving strings from this app's bundle in the selected language.
     var localizer: Localizer { Localizer(bundle: .appResources, language: appLanguage) }
 
-    /// The localized value for [key] in the selected language.
+    /// The localized value for `key` in the selected language.
     func l(_ key: String, _ arguments: CVarArg...) -> String {
         localizer.string(key, arguments: arguments)
     }
