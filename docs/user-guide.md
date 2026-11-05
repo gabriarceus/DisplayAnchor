@@ -20,7 +20,7 @@ Display management needs neither Accessibility nor Screen Recording permission.
 
 1. Arrange your displays as you prefer, then choose Save Layout in the panel.
 2. Enable Automatically restore on reconnect in Settings if you want automatic restore. It is off by default.
-3. When that display set reconnects, the app waits for the configuration to settle and restores the matching saved layout if it differs. You can also restore manually.
+3. When that display set reconnects, or when the app starts, the app waits for the configuration to settle and restores the matching saved layout if it differs. You can also restore manually.
 
 Save Layout creates a profile for a new display set. Update Layout replaces the matching saved arrangement and is available when the current layout differs. Manual edits do not update the saved profile until you choose to save.
 
@@ -32,10 +32,10 @@ Save Layout creates a profile for a new display set. Update Layout replaces the 
 
 - The mini-map shows the current arrangement, highlights the main display, and shows rotated displays with their portrait or landscape footprint and rotation angle.
 - Right-click a display to make it the main display, rotate it, or open Edit Layout. Main-display changes preserve relative positions. Rotation supports quarter turns and restores the previous resolution after the rotation settles.
-- The editor is available with two or more displays. Drag displays to rearrange them; they snap to neighboring edges and cannot overlap. Right-click to select the main display. Apply changes the real arrangement; Cancel discards the draft.
+- The editor is available with two or more displays. Drag displays to rearrange them inside the editor area, which centers on the arrangement after each move at the same zoom; they snap to neighboring edges and cannot overlap. A display dropped away from the others moves next to the nearest one, or back to where the drag started when no position keeps every display connected. Right-click to select the main display. Apply changes the real arrangement; Cancel discards the draft.
 - The pause control suspends automatic restore for 15 minutes. Successful main-display, rotation, or editor changes also pause it and notify you, so restore does not undo your edit immediately. The control appears when automatic restore is enabled.
-- Saved-layout rows let you restore the current set, double-click a name to rename it, or delete with a two-step confirmation.
-- Expand Display details to view position, mode, pixel size, hardware identifiers, serial, and UUID. A dash means the monitor does not report the value. Copy all exports the diagnostics of all displays to the clipboard; the Copy button that appears over a single display copies only that display. An indistinguishable badge flags ambiguous hardware.
+- Saved-layout rows let you restore the current set, double-click a name to rename it, or delete with a two-step confirmation. The confirmation hides the other row details without moving the row and clears itself after 5 seconds.
+- Expand Display details to view position, mode, pixel size, hardware identifiers, serial, and UUID. A dash means the monitor does not report the value. Copy all exports the diagnostics of all displays to the clipboard; the Copy button that appears over a single display copies only that display. The Display details bar stays in place while you scroll the list below it. An indistinguishable badge flags ambiguous hardware.
 - The footer provides Settings and Quit.
 
 Small rectangles in the menu bar icon, title, and saved rows reflect the display count, up to four. The menu bar icon briefly becomes a checkmark after restoration and shows an exclamation mark when the current arrangement differs from the saved one.

@@ -1,80 +1,91 @@
 import MenuBarKit
 import SwiftUI
 
-/// Collapsible per-display diagnostic list: raw identity (model, serial, vendor,
-/// unit, UUID) plus an explicit warning when two displays are indistinguishable
-/// (same EDID), so a restore mismatch can be attributed to that vs. a bug.
+/// Display details bar: a disclosure toggle for the details list and a Copy all
+/// action with a short confirmation.
+struct DisplayDetailHeader: View {
+    @Binding var expanded: Bool
+    let onCopyAll: () -> Void
+
+    @Environment(\.localizer) private var l
+
+    @State private var justCopied = false
+    @State private var copiedTask: Task<Void, Never>?
+
+    var body: some View {
+        HStack {
+            Button {
+                expanded.toggle()
+            } label: {
+                // One rotated chevron: chevron.down and chevron.right differ in width and shift the title.
+                Label {
+                    Text(l("display_details"))
+                } icon: {
+                    Image(systemName: "chevron.right")
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
+                }
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+
+            Spacer()
+
+            if justCopied {
+                Label(l("display_copied"), systemImage: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+                    .lineLimit(1)
+                    .transition(.opacity)
+            }
+
+            Button {
+                onCopyAll()
+                justCopied = true  // appears immediately
+                copiedTask?.cancel()
+                copiedTask = Task {
+                    try? await Task.sleep(for: .seconds(1))
+                    if !Task.isCancelled { withAnimation(.easeOut(duration: 0.15)) { justCopied = false } }
+                }
+            } label: {
+                Label(l("display_copy_all"), systemImage: "doc.on.doc")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .panelHelp(l("display_copy_hint"))
+        }
+    }
+}
+
+/// Per-display diagnostic list: raw identity (model, serial, vendor, unit, UUID)
+/// plus an explicit warning when two displays are indistinguishable (same EDID),
+/// so a restore mismatch can be attributed to that vs. a bug.
 struct DisplayDetailView: View {
     let displays: [DisplaySnapshot]
     let ambiguousKeys: Set<String>
-    let onCopyDiagnostics: () -> Void
     let onCopyDisplay: (DisplaySnapshot) -> Void
 
     @Environment(\.localizer) private var l
 
-    /// What a copy action wrote to the clipboard: every display, or one display by its `snapshotKey`.
-    private enum CopyTarget: Equatable {
-        case all
-        case display(String)
-    }
-
-    @State private var expanded = false
-    @State private var justCopied: CopyTarget?
+    /// `snapshotKey` of the display whose diagnostics were just copied.
+    @State private var copiedKey: String?
     @State private var copiedTask: Task<Void, Never>?
     @State private var hoveredKey: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Button {
-                    expanded.toggle()
-                } label: {
-                    // One rotated chevron: chevron.down and chevron.right differ in width and shift the title.
-                    Label {
-                        Text(l("display_details"))
-                    } icon: {
-                        Image(systemName: "chevron.right")
-                            .rotationEffect(.degrees(expanded ? 90 : 0))
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-
-                Spacer()
-
-                if justCopied == .all {
-                    Label(l("display_copied"), systemImage: "checkmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                        .lineLimit(1)
-                        .transition(.opacity)
-                }
-
-                Button {
-                    copy(.all)
-                } label: {
-                    Label(l("display_copy_all"), systemImage: "doc.on.doc")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .panelHelp(l("display_copy_hint"))
-            }
-
-            if expanded {
-                ForEach(displays, id: \.stableID.snapshotKey) { display in
-                    detailRow(display)
-                }
+            ForEach(displays, id: \.stableID.snapshotKey) { display in
+                detailRow(display)
             }
         }
     }
 
-    private func copy(_ target: CopyTarget, display: DisplaySnapshot? = nil) {
-        if let display { onCopyDisplay(display) } else { onCopyDiagnostics() }
-        justCopied = target  // appears immediately
+    private func copy(_ display: DisplaySnapshot) {
+        onCopyDisplay(display)
+        copiedKey = display.stableID.snapshotKey  // appears immediately
         copiedTask?.cancel()
         copiedTask = Task {
             try? await Task.sleep(for: .seconds(1))
-            if !Task.isCancelled { withAnimation(.easeOut(duration: 0.15)) { justCopied = nil } }
+            if !Task.isCancelled { withAnimation(.easeOut(duration: 0.15)) { copiedKey = nil } }
         }
     }
 
@@ -82,7 +93,7 @@ struct DisplayDetailView: View {
     /// always reserved, so showing it or its confirmation never moves the row.
     private func rowCopyButton(_ display: DisplaySnapshot) -> some View {
         let key = display.stableID.snapshotKey
-        let copied = justCopied == .display(key)
+        let copied = copiedKey == key
         let visible = hoveredKey == key && !copied
         return ZStack(alignment: .trailing) {
             Label(l("display_copied"), systemImage: "checkmark.circle.fill")
@@ -91,7 +102,7 @@ struct DisplayDetailView: View {
                 .lineLimit(1)
                 .opacity(copied ? 1 : 0)
             Button {
-                copy(.display(key), display: display)
+                copy(display)
             } label: {
                 Label(l("display_copy"), systemImage: "doc.on.doc")
             }

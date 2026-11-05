@@ -44,6 +44,8 @@ final class LayoutStore: ObservableObject {
         monitor.onDisplaysSettled = { [weak self] in self?.handleDisplaysSettled() }
         monitor.start()
         refreshCurrentState()
+        // Displays configured before launch, as at login, send no further callback.
+        monitor.scheduleSettledCheck()
     }
 
     // MARK: - Derived state

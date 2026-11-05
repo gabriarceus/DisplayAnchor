@@ -56,8 +56,14 @@ final class DisplayMonitor {
             return
         }
 
+        Log.monitor.debug("reconfiguration flags=\(flags.rawValue)")
+        scheduleSettledCheck()
+    }
+
+    /// Reports `onDisplaysSettled` after a quiet period, restarting any pending wait.
+    func scheduleSettledCheck() {
         let quiet = max(1, settleSeconds())
-        Log.monitor.debug("reconfiguration flags=\(flags.rawValue) → debounce \(quiet)s")
+        Log.monitor.debug("debounce \(quiet)s")
         debounceTask?.cancel()
         debounceTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(quiet))

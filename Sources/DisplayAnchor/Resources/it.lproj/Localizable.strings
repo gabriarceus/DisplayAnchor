@@ -22,7 +22,7 @@
 "settings_auto_restore_toggle" = "Ripristina automaticamente alla riconnessione";
 "settings_auto_restore_description" = "Quando ricolleghi gli schermi e corrispondono a un layout salvato, la disposizione viene ripristinata automaticamente.";
 "settings_notify_toggle" = "Avvisami quando un layout viene ripristinato";
-"settings_settle_label" = "Attesa dopo una modifica agli schermi (s)";
+"settings_settle_label" = "Attesa dopo una modifica agli schermi";
 "settings_settle_description" = "Quanto attendere che la configurazione degli schermi si stabilizzi prima di ripristinare (%d–%d secondi).";
 "settings_launch_at_login" = "Avvia all’accesso";
 "settings_launch_hint_unbundled" = "Disponibile solo con l’app compilata (.app).";

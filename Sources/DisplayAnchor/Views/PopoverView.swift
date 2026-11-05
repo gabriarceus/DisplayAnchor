@@ -20,6 +20,7 @@ struct PopoverView: View {
 
     @State private var showSavedConfirmation = false
     @State private var confirmationTask: Task<Void, Never>?
+    @State private var detailsExpanded = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -67,14 +68,25 @@ struct PopoverView: View {
 
             Divider()
 
-            // Scrolling section: per-display details (expandable) and saved layouts.
+            // The details bar stays outside the ScrollView so it never moves while the list scrolls.
+            if !store.currentDisplays.isEmpty {
+                DisplayDetailHeader(
+                    expanded: $detailsExpanded,
+                    onCopyAll: { copyToPasteboard(store.diagnosticsText()) }
+                )
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                // Separates the bar from the saved layouts; hidden, not removed, so the list does not shift.
+                Divider().opacity(detailsExpanded ? 0 : 1)
+            }
+
+            // Scrolling section: per-display details (when expanded) and saved layouts.
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    if !store.currentDisplays.isEmpty {
+                    if detailsExpanded && !store.currentDisplays.isEmpty {
                         DisplayDetailView(
                             displays: store.currentDisplays,
                             ambiguousKeys: store.ambiguousIdentityKeys,
-                            onCopyDiagnostics: { copyToPasteboard(store.diagnosticsText()) },
                             onCopyDisplay: { display in
                                 copyToPasteboard(
                                     DisplayEngine.diagnosticsText(

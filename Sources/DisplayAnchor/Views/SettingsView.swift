@@ -213,10 +213,12 @@ struct SettingsView: View {
             Spacer()
             TextField("", value: $config.settleSeconds, format: .number)
                 .labelsHidden()
-                .multilineTextAlignment(.trailing)
-                .frame(width: 50)
+                .multilineTextAlignment(.center)
+                .frame(width: 22)
                 .focused($settleFieldFocused)
                 .inputChrome(focused: settleFieldFocused)
+                .onExitCommand { settleFieldFocused = false }
+                .onClickOutsideTextInput(isActive: settleFieldFocused) { settleFieldFocused = false }
             Stepper("", value: $config.settleSeconds, in: Self.settleRange)
                 .labelsHidden()
         }
@@ -310,6 +312,11 @@ struct SettingsView: View {
     /// Status note closing the form: the running app and MenuBarKit versions and a
     /// shortcut to the project page. Deliberately outside the sections, so it reads
     /// as a footnote rather than a setting.
+    /// GitHub logo bundled as a template image; nil when the resource is missing.
+    private static let githubMark: NSImage? = Bundle.appResources
+        .url(forResource: "github-mark", withExtension: "svg")
+        .flatMap(NSImage.init(contentsOf:))
+
     private var footer: some View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 2) {
@@ -321,9 +328,14 @@ struct SettingsView: View {
             .monospacedDigit()
             Spacer()
             Link(destination: UpdateController.repositoryURL) {
-                HStack(spacing: 2) {
-                    Text(UpdateController.repository)
-                    Image(systemName: "arrow.up.right")
+                HStack(spacing: 4) {
+                    if let githubMark = Self.githubMark {
+                        Image(nsImage: githubMark)
+                            .renderingMode(.template)
+                            .resizable()
+                            .frame(width: 11, height: 11)
+                    }
+                    Text("GitHub")
                 }
             }
             .buttonStyle(.bordered)

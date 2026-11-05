@@ -121,6 +121,45 @@ struct LayoutEditingTests {
         #expect(!resolvedRect.intersects(obstacle2))
     }
 
+    // MARK: - Connectivity
+
+    @Test func connectivityRequiresSharedEdgesNotCorners() {
+        let a = CGRect(x: 0, y: 0, width: 100, height: 100)
+        #expect(LayoutEditing.isConnected([a, CGRect(x: 100, y: 50, width: 100, height: 100)]))
+        #expect(!LayoutEditing.isConnected([a, CGRect(x: 100, y: 100, width: 100, height: 100)]))
+        #expect(!LayoutEditing.isConnected([a, CGRect(x: 300, y: 0, width: 100, height: 100)]))
+    }
+
+    @Test func connectivityFollowsChains() {
+        let chain = [
+            CGRect(x: 0, y: 0, width: 100, height: 100),
+            CGRect(x: 200, y: 0, width: 100, height: 100),
+            CGRect(x: 100, y: 0, width: 100, height: 100),
+        ]
+        #expect(LayoutEditing.isConnected(chain))
+    }
+
+    @Test func attachMovesDetachedDisplayToNearestEdge() {
+        let other = CGRect(x: 0, y: 0, width: 300, height: 200)
+        let detached = CGRect(x: 400, y: 20, width: 100, height: 100)
+
+        #expect(LayoutEditing.attach(detached, among: [other], minimumSharedEdge: 50) == CGPoint(x: 300, y: 20))
+    }
+
+    @Test func attachKeepsMinimumSharedEdge() {
+        let other = CGRect(x: 0, y: 0, width: 300, height: 200)
+        let farBelowRight = CGRect(x: 400, y: 500, width: 100, height: 100)
+
+        #expect(LayoutEditing.attach(farBelowRight, among: [other], minimumSharedEdge: 50) == CGPoint(x: 250, y: 200))
+    }
+
+    @Test func attachFailsWhenOthersStayDisconnected() {
+        let others = [CGRect(x: 0, y: 0, width: 100, height: 100), CGRect(x: 1000, y: 0, width: 100, height: 100)]
+        let dragged = CGRect(x: 0, y: 500, width: 100, height: 100)
+
+        #expect(LayoutEditing.attach(dragged, among: others, minimumSharedEdge: 50) == nil)
+    }
+
     // MARK: - Seeding and Profile Reconstitution
 
     @Test func seedClampsZeroOrNegativeDimensionsToAtLeastOne() {

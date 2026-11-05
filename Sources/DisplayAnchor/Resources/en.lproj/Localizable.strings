@@ -22,7 +22,7 @@
 "settings_auto_restore_toggle" = "Automatically restore on reconnect";
 "settings_auto_restore_description" = "When displays are reconnected and match a saved layout, the saved arrangement is re-applied automatically.";
 "settings_notify_toggle" = "Notify when a layout is restored";
-"settings_settle_label" = "Wait after displays change (s)";
+"settings_settle_label" = "Wait after displays change";
 "settings_settle_description" = "How long to wait for the display configuration to settle before restoring (%d–%d seconds).";
 "settings_launch_at_login" = "Launch at login";
 "settings_launch_hint_unbundled" = "Available only when running the built .app bundle.";

@@ -42,6 +42,7 @@ These rules apply to every Swift change in this repository. swift-format handles
 
 - Views read state from LayoutStore, AppConfig, or UpdateController and call their methods. Views never call DisplayEngine to write a configuration.
 - All user-visible text goes through the localizer with a key that exists in every Localizable.strings table. LocalizationTests checks keys and format specifiers.
+- An interaction should not move the content around it: content that jumps on a press, hover, or confirmation is very distracting. Keep the row height and the place of the other elements: hide with `.opacity`, or reserve the space with an overlay or a fixed frame, instead of removing the view. Swap controls in the same place without a fade, so outgoing and incoming controls never overlap. When a feature cannot avoid a shift, keep the feature and keep the shift small.
 - A small private helper stays in the view that uses it. Move it to its own file when a second file needs it.
 - Code that depends on platform behavior, such as gesture handling or menu-bar image rendering, gets an inline comment that names the behavior.
 

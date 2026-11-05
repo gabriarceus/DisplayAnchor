@@ -23,7 +23,7 @@ Paths in this table are relative to [Sources/DisplayAnchor](../Sources/DisplayAn
 | Main panel              | Views/PopoverView.swift, Views/ProfileRowView.swift                                 | Current-layout summary and saved-layout actions                                                            |
 | Display map             | Views/DisplayMapView.swift, Views/DisplayMapGeometry.swift, Views/DisplayTile.swift | Mini-map, quick actions, and the coordinate transform and display tile shared with the editor              |
 | Editor UI               | Views/LayoutEditorView.swift                                                        | Drag interaction and draft apply/cancel controls                                                           |
-| Diagnostics UI          | Views/DisplayDetailView.swift                                                       | Hardware details, copy action, and ambiguous-identity badge                                                |
+| Diagnostics UI          | Views/DisplayDetailView.swift                                                       | Details bar, hardware details, copy actions, and ambiguous-identity badge                                  |
 | Settings UI             | Views/SettingsView.swift                                                            | Preferences, launch at login, and update controls                                                          |
 | Small UI helpers        | Views/DisplayCountIcon.swift                                                        | Display-count icon                                                                                         |
 | Translations            | Resources/\*.lproj/Localizable.strings                                              | Bundled language tables                                                                                    |
@@ -42,7 +42,7 @@ Layout equality compares positions relative to the main display, the main-displa
 
 ## Reconnect and restore flow
 
-1. DisplayMonitor receives display changes and waits for a quiet period. A dock can produce several callbacks for one physical reconnect.
+1. DisplayMonitor receives display changes and waits for a quiet period. A dock can produce several callbacks for one physical reconnect. The same wait also runs once at launch, because displays configured before the app starts send no callback.
 2. LayoutStore refreshes the live snapshot and selects a saved profile by fingerprint.
 3. Automatic restore proceeds only when enabled, unpaused, and the layout differs. A missing profile or an already matching layout needs no configuration write.
 4. DisplayEngine resolves saved displays, applies the configuration, and reports applied, already matching, unmatched, or failed. LayoutStore refreshes UI state and handles feedback.
@@ -59,7 +59,7 @@ Within the transaction, configure mirroring first, modes second, and origins las
 
 Mode selection prefers matching logical and pixel dimensions, including swapped dimensions for quarter-turn rotation, then considers refresh rate, flags, and size. The live list of modes can change after reconnect, so exact restoration is not always possible. See DisplayEngine.swift for the current selection details.
 
-The editor works on an in-memory draft. LayoutEditing owns display-space snapping and overlap handling. DisplayMapGeometry owns the transform between display space and view space. Preserve logical points versus backing pixels, negative origins, and rotated footprints when changing either map or editor behavior.
+The editor works on an in-memory draft. LayoutEditing owns display-space snapping, overlap handling, and the check that a dropped display keeps the arrangement connected through shared edges. DisplayMapGeometry owns the transform between display space and view space. Preserve logical points versus backing pixels, negative origins, and rotated footprints when changing either map or editor behavior.
 
 ## Persistence and settings
 

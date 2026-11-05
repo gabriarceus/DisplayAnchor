@@ -83,6 +83,58 @@ enum LayoutEditing {
         return rect.origin
     }
 
+    /// Whether every frame is linked to the others through shared edges of positive
+    /// length, as macOS requires for an arrangement. Corner contact does not count.
+    static func isConnected(_ frames: [CGRect]) -> Bool {
+        guard var pending = frames.indices.first.map({ [$0] }) else { return true }
+        var reached: Set<Int> = Set(pending)
+        while let index = pending.popLast() {
+            for other in frames.indices where !reached.contains(other) && sharesEdge(frames[index], frames[other]) {
+                reached.insert(other)
+                pending.append(other)
+            }
+        }
+        return reached.count == frames.count
+    }
+
+    /// Returns the origin nearest to `dragged` that places it flush against a
+    /// neighbour, clear of every other frame, with the whole arrangement connected.
+    /// The shared edge is at least `minimumSharedEdge` long, or the shorter side when
+    /// that is less. Returns nil when no such position exists.
+    static func attach(_ dragged: CGRect, among others: [CGRect], minimumSharedEdge: CGFloat) -> CGPoint? {
+        var candidates: [CGPoint] = []
+        for other in others {
+            let overlapY = min(minimumSharedEdge, dragged.height, other.height)
+            let overlapX = min(minimumSharedEdge, dragged.width, other.width)
+            let y = min(max(dragged.minY, other.minY - dragged.height + overlapY), other.maxY - overlapY)
+            let x = min(max(dragged.minX, other.minX - dragged.width + overlapX), other.maxX - overlapX)
+            candidates += [
+                CGPoint(x: other.maxX, y: y),  // right of other
+                CGPoint(x: other.minX - dragged.width, y: y),  // left of other
+                CGPoint(x: x, y: other.maxY),  // below other
+                CGPoint(x: x, y: other.minY - dragged.height),  // above other
+            ]
+        }
+        return
+            candidates
+            .filter { origin in
+                let rect = CGRect(origin: origin, size: dragged.size)
+                return !others.contains { !$0.intersection(rect).isEmpty } && isConnected(others + [rect])
+            }
+            .min { hypot($0.x - dragged.minX, $0.y - dragged.minY) < hypot($1.x - dragged.minX, $1.y - dragged.minY) }
+    }
+
+    /// Whether `a` and `b` touch along an edge segment of positive length.
+    private static func sharesEdge(_ a: CGRect, _ b: CGRect) -> Bool {
+        // Half a point absorbs rounding from the map transform.
+        let tolerance: CGFloat = 0.5
+        let overlapX = min(a.maxX, b.maxX) - max(a.minX, b.minX)
+        let overlapY = min(a.maxY, b.maxY) - max(a.minY, b.minY)
+        let touchX = abs(a.maxX - b.minX) <= tolerance || abs(b.maxX - a.minX) <= tolerance
+        let touchY = abs(a.maxY - b.minY) <= tolerance || abs(b.maxY - a.minY) <= tolerance
+        return (touchX && overlapY > tolerance) || (touchY && overlapX > tolerance)
+    }
+
     /// Rebuilds a `LayoutProfile` from the draft, carrying mode / mirror /
     /// rotation from the matching base snapshots and overriding origin + isMain.
     /// Displays whose identity is missing from `base` are dropped.
