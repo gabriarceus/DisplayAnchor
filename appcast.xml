@@ -3,13 +3,20 @@
     <channel>
         <title>DisplayAnchor</title>
         <item>
-            <title>1.2.0</title>
-            <pubDate>Thu, 05 Nov 2026 19:00:03 +0000</pubDate>
+            <title>1.2.1</title>
+            <pubDate>Tue, 10 Nov 2026 21:42:10 +0000</pubDate>
             <link>https://github.com/gabriarceus/DisplayAnchor</link>
-            <sparkle:version>7</sparkle:version>
-            <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown">## 1.2.0 — Nov 5, 2026
+            <description sparkle:format="markdown">## 1.2.1 — Nov 7, 2026
+
+### Fixed
+
+- The right-click Rotate menu on a display shows a checkmark for the currently active rotation angle.
+- When the language setting is set to System, the app follows the macOS system language instead of defaulting to English.
+
+## 1.2.0 — Nov 5, 2026
 
 ### Added
 
@@ -36,11 +43,11 @@
 - An unreadable saved-layouts file that cannot be backed up is no longer overwritten by the next save.
 - Automatic restore also runs when the app starts, for example at login, if the displays differ from the saved layout.
 - Automatic restore no longer reacts to the app's own display changes when two of them overlap, for example a restore during a rotation.
+- Check now is disabled while an update waits to be installed, instead of doing nothing; Install shows that update.
 - In the layout editor, two monitors that macOS cannot tell apart can be moved and made the main display separately.
 - Launch at login explains when macOS needs approval, with a button that opens Login Items, and when macOS cannot register the app.
 - Rotating one of two same-model monitors with different serial numbers no longer rotates the other one.
 - Skipping a version in the update window removes the update indicator right away.
-- Check now is disabled while an update waits to be installed, instead of doing nothing; Install shows that update.
 - The wait field in Settings stops editing on Escape or on a click elsewhere in the panel.
 
 ## 1.1.0 — Nov 4, 2026
@@ -65,18 +72,8 @@
 ### Removed
 
 - The previous update check based on GitHub releases, and the outdated Gatekeeper hint in update settings.
-
-## 1.0.1 — Aug 20, 2026
-
-### Added
-
-- Native support for both Apple Silicon and Intel Macs in one app.
-
-### Fixed
-
-- The panel header and the menu bar icon description no longer use the old name "Display Layout".
 </description>
-            <enclosure url="https://github.com/gabriarceus/DisplayAnchor/releases/download/v1.2.0/DisplayAnchor-1.2.0.zip" length="4161758" type="application/octet-stream" sparkle:edSignature="DTmPHsgGlbqbqSqw9gpDSyavxE+Sua4rdDO8ce2FkJ9GSZR0h0SWdqFDw7bOoJgsMj/jKqGd289t1qh3M+ssBw==" />
+            <enclosure url="https://github.com/gabriarceus/DisplayAnchor/releases/download/v1.2.1/DisplayAnchor-1.2.1.zip" length="4161727" type="application/octet-stream" sparkle:edSignature="ehGD90crv7MxYxQ/mLPaWMu8TMe4MCeT2amHNDYHDw303ofYFtBjrbhslw7qC7dtrSo9mQu92HMmcgAx38L5Ag==" />
         </item>
         <item>
             <title>1.1.0-rc3</title>
