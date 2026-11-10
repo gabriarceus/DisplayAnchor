@@ -62,8 +62,18 @@ def main():
     parser.add_argument("changelog", type=Path)
     parser.add_argument("version")
     parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=3,
+        help="Number of release sections to include (default: 3).",
+    )
     args = parser.parse_args()
-    notes = release_notes(args.changelog.read_text(encoding="utf-8"), args.version)
+    notes = release_notes(
+        args.changelog.read_text(encoding="utf-8"),
+        args.version,
+        count=args.count,
+    )
     args.output.write_text(notes, encoding="utf-8")
 
 

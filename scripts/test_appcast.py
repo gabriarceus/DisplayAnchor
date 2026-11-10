@@ -146,6 +146,16 @@ class ReleaseNotesTests(unittest.TestCase):
         )
         self.assertEqual(release_notes(changelog, "1.1.0"), "## 1.1.0\n\n### Fixed\n\n- Crash\n\n### Removed\n\n- Old option\n")
 
+    def test_count_limits_the_number_of_release_sections(self):
+        changelog = (
+            "## [1.1.0] - 2026-11-04\n\n### Added\n\n- Feature\n\n"
+            "## [1.0.0] - 2026-08-11\n\n- Old\n"
+        )
+        self.assertEqual(
+            release_notes(changelog, "1.1.0", count=1),
+            "## 1.1.0 — Nov 4, 2026\n\n### Added\n\n- Feature\n",
+        )
+
     def test_missing_or_internal_only_notes_fail_instead_of_publishing_an_empty_window(self):
         for changelog in (
             "# Changelog",

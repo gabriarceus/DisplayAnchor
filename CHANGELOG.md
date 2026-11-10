@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The update window shows these notes without the Maintenance entries.
 
+## [1.2.1] - 2026-11-07
+
+### Fixed
+
+- The right-click Rotate menu on a display shows a checkmark for the currently active rotation angle.
+- When the language setting is set to System, the app follows the macOS system language instead of defaulting to English.
+
+### Maintenance
+
+- Publish the version changelog to the GitHub Release body instead of auto-generating from pull requests.
+
 ## [1.2.0] - 2026-11-05
 
 ### Added
@@ -29,11 +40,11 @@ All notable changes to this project will be documented in this file. The format 
 - An unreadable saved-layouts file that cannot be backed up is no longer overwritten by the next save.
 - Automatic restore also runs when the app starts, for example at login, if the displays differ from the saved layout.
 - Automatic restore no longer reacts to the app's own display changes when two of them overlap, for example a restore during a rotation.
+- Check now is disabled while an update waits to be installed, instead of doing nothing; Install shows that update.
 - In the layout editor, two monitors that macOS cannot tell apart can be moved and made the main display separately.
 - Launch at login explains when macOS needs approval, with a button that opens Login Items, and when macOS cannot register the app.
 - Rotating one of two same-model monitors with different serial numbers no longer rotates the other one.
 - Skipping a version in the update window removes the update indicator right away.
-- Check now is disabled while an update waits to be installed, instead of doing nothing; Install shows that update.
 - The wait field in Settings stops editing on Escape or on a click elsewhere in the panel.
 
 ### Maintenance
@@ -43,9 +54,9 @@ All notable changes to this project will be documented in this file. The format 
 - Panel tooltips, the Edit menu, launch at login, and the menu bar icon and panel placement use the shared MenuBarKit helpers.
 - Release notes are built as Markdown from this changelog and leave out Maintenance entries.
 - Removed the per-release appcast assets and the feed-override cleanup for release candidates 1 and 2.
+- Rotation falls back to the first monitor with the same vendor and product when no monitor reports a matching serial number, as before 1.2.0.
 - The release workflow is the only publication path. It runs the tests and stops when the tag does not match Info.plist or the release already exists; release.sh checks the version and pushes the tag.
 - The saved-layout rename field and the wait field use the MenuBarKit helper that ends text editing on an outside click. Raised the minimum MenuBarKit version to 1.3.0.
-- Rotation falls back to the first monitor with the same vendor and product when no monitor reports a matching serial number, as before 1.2.0.
 
 ## [1.1.0] - 2026-11-04
 

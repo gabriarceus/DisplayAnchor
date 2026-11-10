@@ -49,4 +49,29 @@ struct LocalizedTextTests {
             hourAgo.relativeText(locale: Locale(identifier: "en"))
                 != hourAgo.relativeText(locale: Locale(identifier: "it")))
     }
+
+    @MainActor @Test func systemLanguageSelectionResolvesToPreferredLocalization() throws {
+        let suite = "LocalizationTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let config = AppConfig(defaults: defaults)
+        #expect(config.appLanguage == nil)
+        let expected =
+            Bundle.preferredLocalizations(
+                from: Bundle.appResources.localizations,
+                forPreferences: Locale.preferredLanguages
+            ).first ?? "en"
+        #expect(config.effectiveLanguage == expected)
+        #expect(config.l("common_language_system") == (expected == "it" ? "Sistema" : "System"))
+
+        config.appLanguageRaw = "it"
+        #expect(config.effectiveLanguage == "it")
+        #expect(config.effectiveLocale.language.languageCode?.identifier == "it")
+        #expect(config.l("common_language") == "Lingua")
+
+        config.appLanguageRaw = "en"
+        #expect(config.effectiveLanguage == "en")
+        #expect(config.effectiveLocale.language.languageCode?.identifier == "en")
+        #expect(config.l("common_language") == "Language")
+    }
 }

@@ -67,17 +67,15 @@ struct DisplayMapView: View {
                 .disabled(display.isMain)
         }
         if let onRotate {
-            Menu(l("display_rotate")) {
+            Picker(
+                l("display_rotate"),
+                selection: Binding(
+                    get: { Int(display.rotation.rounded()) },
+                    set: { onRotate(display, $0) }
+                )
+            ) {
                 ForEach([0, 90, 180, 270], id: \.self) { degrees in
-                    Button {
-                        onRotate(display, degrees)
-                    } label: {
-                        if Int(display.rotation.rounded()) == degrees {
-                            Label("\(degrees)°", systemImage: "checkmark")
-                        } else {
-                            Text("\(degrees)°")
-                        }
-                    }
+                    Text("\(degrees)°").tag(degrees)
                 }
             }
         }

@@ -89,8 +89,29 @@ final class AppConfig: ObservableObject {
     /// The forced UI language code, or `nil` to follow the system.
     var appLanguage: String? { appLanguageRaw.isEmpty ? nil : appLanguageRaw }
 
+    /// The language resolved for UI strings: the forced selection or the system preference.
+    var effectiveLanguage: String {
+        appLanguage
+            ?? Bundle.preferredLocalizations(
+                from: Bundle.appResources.localizations,
+                forPreferences: Locale.preferredLanguages
+            ).first ?? "en"
+    }
+
+    /// The locale matching `effectiveLanguage`, preserving region conventions when possible.
+    var effectiveLocale: Locale {
+        if let appLanguage {
+            return Locale(identifier: appLanguage)
+        }
+        let current = Locale.current
+        if current.language.languageCode?.identifier == effectiveLanguage {
+            return current
+        }
+        return Locale(identifier: effectiveLanguage)
+    }
+
     /// Localizer resolving strings from this app's bundle in the selected language.
-    var localizer: Localizer { Localizer(bundle: .appResources, language: appLanguage) }
+    var localizer: Localizer { Localizer(bundle: .appResources, language: effectiveLanguage) }
 
     /// The localized value for `key` in the selected language.
     func l(_ key: String, _ arguments: CVarArg...) -> String {

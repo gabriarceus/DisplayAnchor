@@ -97,6 +97,7 @@ jobs:
           cp "build/${ZIP_NAME}" appcast/
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
           python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "appcast/${ZIP_NAME%.zip}.md"
+          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "build/release_notes.md" --count 1
           echo "$SPARKLE_PRIVATE_KEY" | "$GENERATE_APPCAST" \
             --ed-key-file - \
             --embed-release-notes \
@@ -116,7 +117,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           prerelease: ${{ contains(env.TAG, '-') }}
           files: build/${{ env.ZIP_NAME }}
-          generate_release_notes: true
+          body_path: build/release_notes.md
 
       - name: Publish channel appcast
         if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'

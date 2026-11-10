@@ -25,7 +25,7 @@ struct PanelRootView: View {
         PanelChrome(tint: glassTint) {
             content.panelHelpHost(isActive: isPanelPresented)
                 .environment(\.localizer, config.localizer)
-                .environment(\.locale, config.appLanguage.map(Locale.init(identifier:)) ?? .current)
+                .environment(\.locale, config.effectiveLocale)
         }
         .onReceive(isPresented) { isPanelPresented = $0 }
     }
