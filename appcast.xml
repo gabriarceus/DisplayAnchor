@@ -3,13 +3,19 @@
     <channel>
         <title>DisplayAnchor</title>
         <item>
-            <title>1.2.1</title>
-            <pubDate>Tue, 10 Nov 2026 21:42:10 +0000</pubDate>
+            <title>1.2.2</title>
+            <pubDate>Fri, 13 Nov 2026 17:34:34 +0000</pubDate>
             <link>https://github.com/gabriarceus/DisplayAnchor</link>
-            <sparkle:version>8</sparkle:version>
-            <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.2.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown">## 1.2.1 — Nov 7, 2026
+            <description sparkle:format="markdown">## 1.2.2 — Nov 13, 2026
+
+### Fixed
+
+- Rotating a display from the right-click menu, or restoring a saved layout with a rotated display, turns the picture and keeps the resolutions and the arrangement of all displays. A rotation can take several seconds, and the panel controls wait until it ends.
+
+## 1.2.1 — Nov 7, 2026
 
 ### Fixed
 
@@ -49,31 +55,8 @@
 - Rotating one of two same-model monitors with different serial numbers no longer rotates the other one.
 - Skipping a version in the update window removes the update indicator right away.
 - The wait field in Settings stops editing on Escape or on a click elsewhere in the panel.
-
-## 1.1.0 — Nov 4, 2026
-
-### Added
-
-- In-app updates through [Sparkle](https://github.com/sparkle-project/Sparkle), with signed downloads, installation, and relaunch.
-- Menu bar update indicator and a notification shown once per available version.
-- Settings footer with the running version and a link to the project on GitHub.
-- Update channel selection: Stable by default, with an opt-in for release candidates.
-
-### Changed
-
-- Install replaces the manual Download link, with a compact confirmation and a scrollable changelog when release notes are available.
-- Update checks run silently at launch and every six hours. Manual checks remain available when automatic checks are disabled.
-
-### Fixed
-
-- Switching update channels during an active check waits for it to finish and checks the latest selection without getting stuck on Checking.
-- Up-to-date checks no longer show a failed result.
-
-### Removed
-
-- The previous update check based on GitHub releases, and the outdated Gatekeeper hint in update settings.
 </description>
-            <enclosure url="https://github.com/gabriarceus/DisplayAnchor/releases/download/v1.2.1/DisplayAnchor-1.2.1.zip" length="4161727" type="application/octet-stream" sparkle:edSignature="ehGD90crv7MxYxQ/mLPaWMu8TMe4MCeT2amHNDYHDw303ofYFtBjrbhslw7qC7dtrSo9mQu92HMmcgAx38L5Ag==" />
+            <enclosure url="https://github.com/gabriarceus/DisplayAnchor/releases/download/v1.2.2/DisplayAnchor-1.2.2.zip" length="4156146" type="application/octet-stream" sparkle:edSignature="JY//peChTSYxP/gt2NprAiMPlf9SmEzEC/w2myDKXCQYq8Igp9aw2P2OyUv7IcxNbwkfGQ0A5yZIm7CqYzp5Ag==" />
         </item>
         <item>
             <title>1.1.0-rc3</title>
