@@ -23,6 +23,8 @@ final class LayoutStore: ObservableObject {
     @Published private(set) var lastRestoreAt: Date?
     @Published private(set) var justRestored = false
     @Published private(set) var autoRestoreSnoozedUntil: Date?
+    /// True while a layout is being applied. Saves and further applies are ignored meanwhile.
+    @Published private(set) var isApplying = false
 
     let config: AppConfig
     let profiles = ProfileStore()
@@ -32,7 +34,6 @@ final class LayoutStore: ObservableObject {
     var onStateChange: (() -> Void)?
     private var justRestoredTask: Task<Void, Never>?
     private var snoozeTask: Task<Void, Never>?
-    private var modeRestoreTask: Task<Void, Never>?
 
     init(config: AppConfig) {
         self.config = config
@@ -78,6 +79,7 @@ final class LayoutStore: ObservableObject {
 
     @discardableResult
     func saveCurrentLayout(label: String) -> Bool {
+        guard !isApplying else { return false }
         var snapshot = DisplayEngine.snapshotCurrentLayout()
         snapshot.label = label.trimmingCharacters(in: .whitespaces).isEmpty ? defaultLabel(for: snapshot) : label
         guard profiles.save(snapshot) else { return false }
@@ -127,66 +129,61 @@ final class LayoutStore: ObservableObject {
         }
         let profile = LayoutProfile(fingerprint: currentFingerprint, label: "", savedAt: Date(), displays: displays)
         Log.restore.notice("setMainDisplay: '\(snapshot.name, privacy: .public)'")
-        Task { await performLiveChange { await DisplayEngine.applyLayout(profile) } }
+        performLiveChange(profile)
     }
 
     /// Rotates `snapshot`'s display to `degrees` (0/90/180/270), applied immediately.
-    /// The framebuffer transform resets the display to a default mode, so once the
-    /// rotation settles the pre-rotation mode is re-applied.
+    /// The other displays keep their modes and stay attached. A rotation the
+    /// display rejects changes nothing.
     func rotateDisplay(_ snapshot: DisplaySnapshot, to degrees: Int) {
-        guard let id = DisplayEngine.liveID(for: snapshot) else {
-            Log.restore.notice("rotateDisplay: no live match for '\(snapshot.name, privacy: .public)'")
-            return
-        }
+        let displays = LayoutEditing.rotating(
+            currentDisplays, snapshotKey: snapshot.stableID.snapshotKey, to: degrees)
+        let profile = LayoutProfile(fingerprint: currentFingerprint, label: "", savedAt: Date(), displays: displays)
         Log.restore.notice("rotateDisplay: '\(snapshot.name, privacy: .public)' → \(degrees)°")
-        modeRestoreTask?.cancel()
-        Task {
-            let result = await performLiveChange {
-                DisplayEngine.setRotation(id, degrees: degrees) ? .applied : .failed("rotation rejected")
-            }
-            guard result == .applied else { return }
-
-            modeRestoreTask = Task { @MainActor in
-                try? await Task.sleep(for: .seconds(2))
-                guard !Task.isCancelled else { return }
-                let restored = await self.performLiveChange { DisplayEngine.setMode(id, to: snapshot.mode) }
-                Log.restore.notice("rotateDisplay: mode restore → \(String(describing: restored), privacy: .public)")
-            }
-        }
+        performLiveChange(profile, requireRotation: true)
     }
 
     /// Commits an edited draft layout to the system.
     func applyEditedLayout(_ draft: [DraftDisplay]) {
         let profile = LayoutEditing.profile(from: draft, base: currentDisplays, fingerprint: currentFingerprint)
         Log.restore.notice("applyEditedLayout: \(draft.count) displays")
-        Task { await performLiveChange { await DisplayEngine.applyLayout(profile) } }
+        performLiveChange(profile)
     }
 
-    /// Runs a live display mutation with reconfiguration callbacks suppressed
-    /// (so it can't trigger an auto-restore), flashing on success and re-reading
-    /// state immediately and again once changes that settle late (rotation) land.
-    /// A successful change also pauses auto-restore so it won't undo the edit.
-    @discardableResult
-    private func performLiveChange(_ work: () async -> LayoutApplyResult) async -> LayoutApplyResult {
-        let result = await monitor.performApplying(work)
-        if case .applied = result {
-            flashRestored()
-            snoozeAfterManualChange()
-        }
-        refreshCurrentState()
-        Task { @MainActor in
+    /// Applies `profile` as a live edit with reconfiguration callbacks suppressed,
+    /// flashing on success and re-reading state immediately and once more for
+    /// changes that settle late. A successful change also pauses auto-restore.
+    /// Ignored while another apply is in progress.
+    private func performLiveChange(_ profile: LayoutProfile, requireRotation: Bool = false) {
+        guard !isApplying else { return }
+        isApplying = true
+        Task {
+            let result = await monitor.performApplying {
+                await DisplayEngine.applyLayout(profile, requireRotation: requireRotation)
+            }
+            isApplying = false
+            if case .applied = result {
+                flashRestored()
+                snoozeAfterManualChange()
+            }
+            refreshCurrentState()
+            recheckIfDisplaySetChanged(since: profile)
             try? await Task.sleep(for: .seconds(1.2))
-            self.refreshCurrentState()
+            refreshCurrentState()
         }
-        return result
+    }
+
+    /// Schedules a settled check when the live display set is not the one `profile`
+    /// was applied to: events that arrive during an apply are suppressed.
+    private func recheckIfDisplaySetChanged(since profile: LayoutProfile) {
+        if currentFingerprint != profile.fingerprint { monitor.scheduleSettledCheck() }
     }
 
     /// How long a pause of automatic restore lasts.
     static let autoRestorePauseDuration: TimeInterval = 15 * 60
 
     /// Pauses auto-restore after a manual live edit, notifying the user. An
-    /// already-active snooze is extended silently, so a single user action that
-    /// lands in several steps (e.g. rotation + mode restore) notifies only once.
+    /// already-active snooze is extended silently.
     private func snoozeAfterManualChange() {
         guard config.autoRestoreEnabled else { return }
         let wasSnoozed = isAutoRestoreSnoozed
@@ -249,12 +246,18 @@ final class LayoutStore: ObservableObject {
             Log.restore.debug("displaysSettled: auto-restore skipped (already matches)")
             return
         }
+        guard !isApplying else {
+            Log.restore.notice("displaysSettled: auto-restore skipped (apply in progress)")
+            return
+        }
         Task { await apply(profile, auto: true) }
     }
 
     private func apply(_ profile: LayoutProfile, auto: Bool) async {
-        modeRestoreTask?.cancel()
+        guard !isApplying else { return }
+        isApplying = true
         let result = await monitor.performApplying { await DisplayEngine.applyLayout(profile) }
+        isApplying = false
         Log.restore.notice(
             "apply(auto: \(auto)): '\(profile.label, privacy: .public)' → \(String(describing: result), privacy: .public)"
         )
@@ -291,6 +294,7 @@ final class LayoutStore: ObservableObject {
         }
 
         refreshCurrentState()
+        recheckIfDisplaySetChanged(since: profile)
     }
 
     private func flashRestored() {

@@ -1,6 +1,6 @@
 # Architecture
 
-DisplayAnchor uses AppKit for the menu bar and app lifecycle, SwiftUI for the panel, and CoreGraphics, ColorSync, and IOKit for display configuration. It is a SwiftPM executable, assembled into an app bundle by the build script.
+DisplayAnchor uses AppKit for the menu bar and app lifecycle, SwiftUI for the panel, and CoreGraphics, ColorSync, and the private MonitorPanel framework for display configuration. It is a SwiftPM executable, assembled into an app bundle by the build script.
 
 ## Source map
 
@@ -15,7 +15,7 @@ Paths in this table are relative to [Sources/DisplayAnchor](../Sources/DisplayAn
 | Display events          | DisplayMonitor.swift                                                                | Reconfiguration callbacks, settle debounce, and suppression of events caused by the app                    |
 | Restore policy          | LayoutStore.swift                                                                   | Current state, saved-layout selection, save/restore actions, live edits, and temporary pause               |
 | Persistence             | ProfileStore.swift                                                                  | Versioned profile document, atomic writes, and storage issues                                              |
-| Editor logic            | LayoutEditing.swift                                                                 | Draft conversion, edge snapping, and overlap resolution                                                    |
+| Editor logic            | LayoutEditing.swift                                                                 | Draft conversion, edge snapping, overlap resolution, and rotation geometry                                 |
 | Updates                 | UpdateController.swift, UpdateChannel.swift, DeferredUpdateUserDriver.swift         | Sparkle lifecycle, channel filtering, silent checks, held scheduled offers, and the standard update window |
 | Logging                 | Log.swift                                                                           | Unified log categories for restore, engine, monitor, UI, updates, and profiles                             |
 | Shared text             | LocalizedText.swift                                                                 | Display-count text and relative dates shared by views and notifications                                    |
@@ -53,7 +53,7 @@ Saving is separate from applying. Successful manual edits pause automatic restor
 
 ## Configuration order and geometry
 
-CoreGraphics configures mirroring, modes, and origins in a transaction. Rotation is written through an IOKit framebuffer probe before that transaction because it can reset the mode. Allow rotation to settle before restoring resolution and positions. A rejected rotation is best effort: the geometry transaction can still proceed.
+CoreGraphics configures mirroring, modes, and origins in a transaction. Rotation is written through the private MonitorPanel framework before that transaction, because CoreGraphics cannot write it. After a rotation macOS resets the modes and origins of every display, in steps that can be seconds apart. Wait until the live layout stops changing before restoring resolution and positions. A live rotation applies the whole current layout with the new angle; LayoutEditing computes the new footprint and origin of the turned display. In a restore, a rejected rotation is best effort: the geometry transaction can still proceed. A live rotation that is rejected changes nothing. LayoutStore accepts one apply at a time and ignores saves and further edits until it ends, because the layout is in an intermediate state during the wait.
 
 Within the transaction, configure mirroring first, modes second, and origins last. Mirrored displays follow their master. Translate origins so the chosen main display lands at the origin while relative positions stay intact. Skip unchanged origins: reapplying them can make the system call stall. Configuration errors cancel the transaction rather than completing a partial transaction.
 

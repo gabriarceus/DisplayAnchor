@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The update window shows these notes without the Maintenance entries.
 
+## [1.2.2] - 2026-11-13
+
+### Fixed
+
+- Rotating a display from the right-click menu, or restoring a saved layout with a rotated display, turns the picture and keeps the resolutions and the arrangement of all displays. A rotation can take several seconds, and the panel controls wait until it ends.
+
 ## [1.2.1] - 2026-11-07
 
 ### Fixed

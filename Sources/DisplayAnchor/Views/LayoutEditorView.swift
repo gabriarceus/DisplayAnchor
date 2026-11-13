@@ -141,8 +141,6 @@ struct LayoutEditorView: View {
 
     private static let canvasSpace = "editorCanvas"
     private static let canvasPadding: CGFloat = 16
-    /// Shortest shared edge, in display points, when a dropped display is moved next to a neighbour.
-    private static let minimumSharedEdge: CGFloat = 200
 
     /// Display-space rect the canvas shows inside its padding, centered on `world`.
     private func visibleBounds(map: DisplayMapGeometry, in size: CGSize) -> CGRect {
@@ -188,7 +186,8 @@ struct LayoutEditorView: View {
                     if !LayoutEditing.isConnected(others + [dropped]) {
                         // macOS would move a detached display on apply; settle it next to a neighbour instead.
                         origin =
-                            LayoutEditing.attach(dropped, among: others, minimumSharedEdge: Self.minimumSharedEdge)
+                            LayoutEditing.attach(
+                                dropped, among: others, minimumSharedEdge: LayoutEditing.minimumSharedEdge)
                             ?? start
                     }
                     withAnimation(.easeOut(duration: 0.15)) {

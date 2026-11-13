@@ -223,6 +223,54 @@ struct LayoutEditingTests {
         #expect(profile.displays.map(\.stableID.ambiguityOrdinal) == [0, 1])
     }
 
+    // MARK: - Rotation
+
+    @Test func quarterTurnSwapsModeAndKeepsDisplayAttached() {
+        let left = display(uuid: "left", origin: CGPoint(x: -1920, y: 0))
+        let main = display(uuid: "main", isMain: true)
+
+        let rotated = LayoutEditing.rotating([left, main], snapshotKey: left.stableID.snapshotKey, to: 90)
+
+        #expect(rotated[0].rotation == 90)
+        #expect(rotated[0].mode.width == 1080)
+        #expect(rotated[0].mode.height == 1920)
+        #expect(rotated[1].originX - rotated[0].originX == 1080)
+        #expect(rotated[1].originY == rotated[0].originY)
+        #expect(rotated[1].mode == main.mode)
+    }
+
+    @Test func quarterTurnBetweenTwoDisplaysKeepsBothAttached() {
+        let left = display(uuid: "left", origin: CGPoint(x: -1920, y: 0))
+        let main = display(uuid: "main", isMain: true)
+        let right = display(uuid: "right", origin: CGPoint(x: 1920, y: 0))
+
+        let rotated = LayoutEditing.rotating([left, main, right], snapshotKey: main.stableID.snapshotKey, to: 90)
+
+        #expect(rotated.map(\.originX) == [-1920, 0, 1080])
+        #expect(LayoutEditing.isConnected(LayoutEditing.seed(from: rotated).map(\.frame)))
+    }
+
+    @Test func quarterTurnBackRestoresLandscapeMode() {
+        let portrait = display(uuid: "left", size: CGSize(width: 1080, height: 1920), rotation: 90)
+
+        let rotated = LayoutEditing.rotating([portrait], snapshotKey: portrait.stableID.snapshotKey, to: 0)
+
+        #expect(rotated[0].rotation == 0)
+        #expect(rotated[0].mode.width == 1920)
+        #expect(rotated[0].mode.height == 1080)
+    }
+
+    @Test func halfTurnKeepsModeAndOrigin() {
+        let left = display(uuid: "left", origin: CGPoint(x: -1920, y: 0))
+        let main = display(uuid: "main", isMain: true)
+
+        let rotated = LayoutEditing.rotating([left, main], snapshotKey: left.stableID.snapshotKey, to: 180)
+
+        var expected = left
+        expected.rotation = 180
+        #expect(rotated == [expected, main])
+    }
+
     @Test func stableIdentityUsesUUIDBeforeEDIDFallback() {
         let identified = StableDisplayID(
             uuid: "uuid", vendor: 1, model: 2, serial: 3, isBuiltin: false, unitNumber: 0, ambiguityOrdinal: 0)

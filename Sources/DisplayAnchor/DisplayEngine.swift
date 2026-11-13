@@ -3,11 +3,10 @@ import ColorSync
 import CoreGraphics
 import CryptoKit
 import Foundation
-import IOKit
 import os
 
 /// Reads the current display arrangement through CoreGraphics and ColorSync,
-/// applies a saved one (CoreGraphics configuration plus IOKit rotation), and
+/// applies a saved one (CoreGraphics configuration plus MonitorPanel rotation), and
 /// computes the display-set fingerprint. Stateless: every entry point reads live
 /// data. Functions that resolve display names read `NSScreen` and are main-actor
 /// isolated.
@@ -175,8 +174,10 @@ enum DisplayEngine {
 
     // MARK: - Apply
 
+    /// Applies `profile` to the live displays. With `requireRotation`, a rejected
+    /// rotation fails the apply before any mode or origin changes.
     @MainActor
-    static func applyLayout(_ profile: LayoutProfile) async -> LayoutApplyResult {
+    static func applyLayout(_ profile: LayoutProfile, requireRotation: Bool = false) async -> LayoutApplyResult {
         let liveIDs = activeDisplayIDs()
         Log.engine.debug(
             "applyLayout: '\(profile.label, privacy: .public)' fp=\(profile.fingerprint, privacy: .public) saved=\(profile.displays.count) live=\(liveIDs.count)"
@@ -201,19 +202,23 @@ enum DisplayEngine {
             return .alreadyMatches
         }
 
-        // 0. Rotation first, outside the configuration transaction (it goes through
-        // the IOKit framebuffer transform, not CoreGraphics). The transform resets
-        // the display mode, so modes/origins are configured only after it settles.
-        // Best-effort: a rejected rotation still lets geometry apply.
+        // 0. Rotation first, outside the configuration transaction (CoreGraphics
+        // cannot write it). macOS then resets the modes and origins of every
+        // display, so they are configured only after that reset settles.
+        // Best-effort unless `requireRotation`: a rejected rotation still lets geometry apply.
         var rotationPending = false
         for entry in matched {
             let target = Int(entry.snapshot.rotation.rounded())
             guard Int(CGDisplayRotation(entry.id).rounded()) != target else { continue }
             Log.engine.debug("applyLayout: rotate '\(entry.snapshot.name, privacy: .public)' → \(target)°")
-            if setRotation(entry.id, degrees: target) { rotationPending = true }
+            if setRotation(entry.id, degrees: target) {
+                rotationPending = true
+            } else if requireRotation {
+                return .failed("rotation rejected")
+            }
         }
         if rotationPending {
-            try? await Task.sleep(for: .seconds(2))
+            await waitForRotationToSettle()
         }
 
         var configRef: CGDisplayConfigRef?
@@ -366,145 +371,65 @@ enum DisplayEngine {
         }
     }
 
-    // MARK: - Live edits
+    // MARK: - Rotation
 
-    /// The live display ID currently matching `snapshot`, or nil if none matches.
-    static func liveID(for snapshot: DisplaySnapshot) -> CGDirectDisplayID? {
-        let liveIDs = activeDisplayIDs()
-        return match(snapshot, among: liveIDs, ordinals: ambiguityOrdinals(for: liveIDs))?.id
-    }
-
-    /// Applies the best live match for `descriptor` to a single display. Returns
-    /// `.alreadyMatches` (changing nothing) when the current mode already fits.
-    @MainActor
-    static func setMode(_ id: CGDirectDisplayID, to descriptor: ModeDescriptor) -> LayoutApplyResult {
-        guard let mode = bestMode(for: id, descriptor: descriptor) else {
-            return .failed("no display mode available")
-        }
-        if let current = CGDisplayCopyDisplayMode(id),
-            current.width == mode.width, current.height == mode.height,
-            current.pixelWidth == mode.pixelWidth, current.pixelHeight == mode.pixelHeight,
-            current.refreshRate == mode.refreshRate
-        {
-            return .alreadyMatches
-        }
-        var configRef: CGDisplayConfigRef?
-        guard CGBeginDisplayConfiguration(&configRef) == .success, let config = configRef else {
-            return .failed("CGBeginDisplayConfiguration failed")
-        }
-        guard CGConfigureDisplayWithDisplayMode(config, id, mode, nil) == .success else {
-            CGCancelDisplayConfiguration(config)
-            Log.engine.error("setMode: CGConfigureDisplayWithDisplayMode failed for display \(id)")
-            return .failed("CGConfigureDisplayWithDisplayMode failed")
-        }
-        let error = CGCompleteDisplayConfiguration(config, .permanently)
-        if error == .success {
-            Log.engine.notice("setMode: display \(id) → \(mode.width)x\(mode.height)")
-            return .applied
-        }
-        Log.engine.error("setMode: CGCompleteDisplayConfiguration failed (\(error.rawValue)) for display \(id)")
-        return .failed("CGCompleteDisplayConfiguration error \(error.rawValue)")
-    }
-
-    /// Sets a display's rotation to `degrees` (0/90/180/270). CoreGraphics exposes
-    /// rotation read-only, so this uses the IOKit framebuffer transform request —
-    /// the only available write path. Best-effort: returns false (and changes
-    /// nothing) if the framebuffer service can't be reached or rejects the probe.
-    static func setRotation(_ id: CGDirectDisplayID, degrees: Int) -> Bool {
-        // IOGraphicsTypes.h scale flags: swapAxes = 1, invertX = 2, invertY = 4;
-        // the kIOScaleRotate* transforms are their combinations (as in fb-rotate).
-        let transforms: [Int: UInt32] = [0: 0x0, 90: 0x3, 180: 0x6, 270: 0x5]
-        guard let transform = transforms[((degrees % 360) + 360) % 360] else {
+    /// Sets a display's rotation to `degrees` (0/90/180/270). Returns false, and
+    /// changes nothing, when the display cannot be rotated.
+    private static func setRotation(_ id: CGDirectDisplayID, degrees: Int) -> Bool {
+        let angle = ((degrees % 360) + 360) % 360
+        guard angle % 90 == 0 else {
             Log.engine.error("setRotation: unsupported angle \(degrees)°")
             return false
         }
-        let display = ioService(for: id)
-        guard display != 0 else {
-            Log.engine.error("setRotation: no IOService for display \(id)")
+        // CoreGraphics exposes rotation read-only. MPDisplay is the private
+        // MonitorPanel class behind the rotation control of System Settings.
+        guard dlopen("/System/Library/PrivateFrameworks/MonitorPanel.framework/MonitorPanel", RTLD_NOW) != nil,
+            let manager = (NSClassFromString("MPDisplayMgr") as? NSObject.Type)?.init(),
+            manager.responds(to: NSSelectorFromString("displays")),
+            let display = (manager.value(forKey: "displays") as? [NSObject])?.first(where: {
+                $0.responds(to: NSSelectorFromString("displayID"))
+                    && ($0.value(forKey: "displayID") as? NSNumber)?.uint32Value == id
+            }),
+            display.responds(to: NSSelectorFromString("canChangeOrientation")),
+            display.responds(to: NSSelectorFromString("setOrientation:"))
+        else {
+            Log.engine.error("setRotation: no MPDisplay for display \(id)")
             return false
         }
-        // The transform request must go to the IOFramebuffer ancestor: probing the
-        // IODisplayConnect node itself returns kIOReturnUnsupported.
-        let service = framebufferService(from: display)
-        IOObjectRelease(display)
-        guard service != 0 else {
-            Log.engine.error("setRotation: no IOFramebuffer ancestor for display \(id)")
+        guard display.value(forKey: "canChangeOrientation") as? Bool == true else {
+            Log.engine.error("setRotation: display \(id) cannot change orientation")
             return false
         }
-        defer { IOObjectRelease(service) }
-        // 0x400 = kIOFBSetTransform; the transform flags sit in the upper 16 bits.
-        let options: UInt32 = 0x00000400 | (transform << 16)
-        let result = IOServiceRequestProbe(service, options)
-        if result != KERN_SUCCESS {
-            Log.engine.error("setRotation: IOServiceRequestProbe failed (\(result)) for display \(id)")
-            return false
-        }
-        Log.engine.notice("setRotation: display \(id) → \(degrees)°")
+        display.setValue(angle, forKey: "orientation")
+        Log.engine.notice("setRotation: display \(id) → \(angle)°")
         return true
     }
 
-    /// Nearest ancestor of `display` (inclusive) in the service plane that is an
-    /// `IOFramebuffer`. The caller owns the returned service and must
-    /// `IOObjectRelease` it; returns 0 if none is found. `display` is untouched.
-    private static func framebufferService(from display: io_service_t) -> io_service_t {
-        var current = display
-        IOObjectRetain(current)
-        while current != 0 {
-            if IOObjectConformsTo(current, "IOFramebuffer") != 0 { return current }
-            var parent = io_registry_entry_t()
-            let result = IORegistryEntryGetParentEntry(current, kIOServicePlane, &parent)
-            IOObjectRelease(current)
-            current = result == KERN_SUCCESS ? parent : 0
-        }
-        return 0
-    }
-
-    /// Resolves the `IODisplayConnect` node backing a display by matching its
-    /// vendor, product, and serial against the display's EDID numbers (the
-    /// replacement for the removed `CGDisplayIOServicePort`). The caller owns the
-    /// returned service and must `IOObjectRelease` it; returns 0 if not found.
-    /// When no node matches the serial, the first vendor and product match is used.
-    /// Displays with identical EDID numbers resolve to the first match — a
-    /// best-effort tiebreak.
-    private static func ioService(for id: CGDirectDisplayID) -> io_service_t {
-        let vendor = CGDisplayVendorNumber(id)
-        let model = CGDisplayModelNumber(id)
-        let serial = CGDisplaySerialNumber(id)
-        var iterator = io_iterator_t()
-        guard
-            IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IODisplayConnect"), &iterator)
-                == KERN_SUCCESS
-        else {
-            return 0
-        }
-        defer { IOObjectRelease(iterator) }
-
-        // Some adapters report a serial in IOKit that differs from CoreGraphics, so a
-        // vendor and product match stays available when no serial matches.
-        var fallback: io_service_t = 0
-        var service = IOIteratorNext(iterator)
-        while service != 0 {
-            if let info = IODisplayCreateInfoDictionary(service, IOOptionBits(kIODisplayOnlyPreferredName))?
-                .takeRetainedValue() as? [String: Any],
-                (info["DisplayVendorID"] as? NSNumber)?.uint32Value == vendor,
-                (info["DisplayProductID"] as? NSNumber)?.uint32Value == model
-            {
-                // EDIDs without a serial omit the key; CoreGraphics reports them as 0.
-                if ((info["DisplaySerialNumber"] as? NSNumber)?.uint32Value ?? 0) == serial {
-                    if fallback != 0 { IOObjectRelease(fallback) }
-                    return service
-                }
-                if fallback == 0 {
-                    fallback = service
-                    service = IOIteratorNext(iterator)
-                    continue
-                }
+    /// Returns when the live layout has stayed unchanged for `rotationQuietPeriod`,
+    /// or after `rotationSettleTimeout`.
+    @MainActor
+    private static func waitForRotationToSettle() async {
+        let clock = ContinuousClock()
+        let start = clock.now
+        var lastChange = start
+        var last = geometrySignature(snapshotCurrentLayout())
+        while !Task.isCancelled, clock.now - lastChange < rotationQuietPeriod,
+            clock.now - start < rotationSettleTimeout
+        {
+            try? await Task.sleep(for: .milliseconds(500))
+            let current = geometrySignature(snapshotCurrentLayout())
+            if current != last {
+                last = current
+                lastChange = clock.now
             }
-            IOObjectRelease(service)
-            service = IOIteratorNext(iterator)
         }
-        return fallback
     }
+
+    // After a rotation macOS resets the modes and origins of every display in
+    // steps up to 5 s apart (measured on an Intel MacBook Pro with two monitors).
+    // shortcut: a fixed quiet period, raise it if a slower Mac resets later.
+    private static let rotationQuietPeriod: Duration = .seconds(7)
+    private static let rotationSettleTimeout: Duration = .seconds(30)
 
     // MARK: - Diagnostics
 

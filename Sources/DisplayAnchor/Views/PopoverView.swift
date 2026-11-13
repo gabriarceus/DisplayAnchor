@@ -59,6 +59,7 @@ struct PopoverView: View {
                         onEdit: store.currentDisplays.count >= 2 ? onEditLayout : nil
                     )
                     .frame(height: 120)
+                    .disabled(store.isApplying)
                     statusLine
                     actionButtons
                 }
@@ -144,7 +145,7 @@ struct PopoverView: View {
             Button(saveButtonTitle, action: saveCurrentLayout)
                 .buttonStyle(.borderedProminent)
                 .lineLimit(1)
-                .disabled(store.matchState == .matches)
+                .disabled(store.matchState == .matches || store.isApplying)
 
             snoozeControl
 
@@ -211,7 +212,7 @@ struct PopoverView: View {
                     ProfileRowView(
                         profile: profile,
                         isCurrent: profile.fingerprint == store.currentFingerprint,
-                        restoreDisabled: store.matchState == .matches,
+                        restoreDisabled: store.matchState == .matches || store.isApplying,
                         onRestore: { store.restoreNow() },
                         onRename: { store.rename(fingerprint: profile.fingerprint, to: $0) },
                         onDelete: { store.deleteProfile(fingerprint: profile.fingerprint) }

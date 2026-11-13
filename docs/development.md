@@ -37,7 +37,7 @@ Existing tests use Swift Testing and live in [Tests/DisplayAnchorTests](../Tests
 | LocalizationTests.swift             | Same keys and format specifiers in every bundled language, and display counts  |
 | DisplayGeometryTests.swift          | Translation and order independence, drift detection, and ambiguous identities  |
 | DisplayMapGeometryTests.swift       | Scaling, centering, adjacency, negative coordinates, and mixed orientations    |
-| LayoutEditingTests.swift            | Snapping, overlap resolution, connectivity, draft conversion, and indistinguishable displays |
+| LayoutEditingTests.swift            | Snapping, overlap resolution, connectivity, rotation, draft conversion, and indistinguishable displays |
 | DisplayCountIconTests.swift         | Template rendering, display-count bounds, and relative display sizes           |
 | UpdateControllerTests.swift         | No-update completion, update-check error handling, and skipped versions        |
 | UpdateChannelTests.swift            | Stable defaults, persisted opt-in, channel filtering, and stale RC responses   |

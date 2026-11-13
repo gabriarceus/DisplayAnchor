@@ -16,9 +16,10 @@ struct DraftDisplay: Identifiable, Equatable {
     var frame: CGRect { CGRect(origin: origin, size: size) }
 }
 
-/// Pure (view-free) helpers for the interactive layout editor: seeding drafts
-/// from a snapshot, snapping a dragged display against its neighbours, resolving
-/// overlaps, and rebuilding a `LayoutProfile` to feed the apply engine.
+/// Pure (view-free) helpers for interactive layout edits: seeding drafts from a
+/// snapshot, snapping a dragged display against its neighbours, resolving
+/// overlaps, turning a display, and rebuilding a `LayoutProfile` to feed the
+/// apply engine.
 enum LayoutEditing {
 
     /// Builds editable drafts from a live snapshot, using each display's visible
@@ -122,6 +123,43 @@ enum LayoutEditing {
                 return !others.contains { !$0.intersection(rect).isEmpty } && isConnected(others + [rect])
             }
             .min { hypot($0.x - dragged.minX, $0.y - dragged.minY) < hypot($1.x - dragged.minX, $1.y - dragged.minY) }
+    }
+
+    /// Shortest shared edge, in display points, when a display is moved next to a neighbour.
+    static let minimumSharedEdge: CGFloat = 200
+
+    /// `displays` with the display keyed `snapshotKey` turned to `degrees`. A turn
+    /// between landscape and portrait swaps its mode dimensions and moves the displays
+    /// to its right or below it by the size change. If the arrangement is then
+    /// detached, the turned display moves to the nearest origin that connects it.
+    static func rotating(_ displays: [DisplaySnapshot], snapshotKey: String, to degrees: Int) -> [DisplaySnapshot] {
+        guard let index = displays.firstIndex(where: { $0.stableID.snapshotKey == snapshotKey }) else {
+            return displays
+        }
+        var displays = displays
+        let isQuarterTurn = (Int(displays[index].rotation.rounded()) - degrees) % 180 != 0
+        displays[index].rotation = Double(degrees)
+        guard isQuarterTurn else { return displays }
+
+        let old = seed(from: displays)[index].frame
+        var mode = displays[index].mode
+        swap(&mode.width, &mode.height)
+        swap(&mode.pixelWidth, &mode.pixelHeight)
+        displays[index].mode = mode
+        for other in displays.indices where other != index {
+            if CGFloat(displays[other].originX) >= old.maxX { displays[other].originX += Int(old.height - old.width) }
+            if CGFloat(displays[other].originY) >= old.maxY { displays[other].originY += Int(old.width - old.height) }
+        }
+
+        var frames = seed(from: displays).map(\.frame)
+        let turned = frames.remove(at: index)
+        if !isConnected(frames + [turned]),
+            let origin = attach(turned, among: frames, minimumSharedEdge: minimumSharedEdge)
+        {
+            displays[index].originX = Int(origin.x.rounded())
+            displays[index].originY = Int(origin.y.rounded())
+        }
+        return displays
     }
 
     /// Whether `a` and `b` touch along an edge segment of positive length.

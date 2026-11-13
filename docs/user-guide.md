@@ -31,7 +31,7 @@ Save Layout creates a profile for a new display set. Update Layout replaces the 
 | <img src="screenshots/quick-actions.png" alt="Display quick actions for main display, rotation, and editing" width="250"> | <img src="screenshots/layout-editor.png" alt="Drag-and-drop display arrangement editor" width="250"> | <img src="screenshots/settings.png" alt="DisplayAnchor preferences" width="250"> |
 
 - The mini-map shows the current arrangement, highlights the main display, and shows rotated displays with their portrait or landscape footprint and rotation angle.
-- Right-click a display to make it the main display, rotate it, or open Edit Layout. Main-display changes preserve relative positions. Rotation supports quarter turns and restores the previous resolution after the rotation settles.
+- Right-click a display to make it the main display, rotate it, or open Edit Layout. Main-display changes preserve relative positions. Rotation supports quarter turns. macOS resets the arrangement after a rotation, so the app waits for the displays to settle and then restores the resolutions and positions. This can take several seconds.
 - The editor is available with two or more displays. Drag displays to rearrange them inside the editor area, which centers on the arrangement after each move at the same zoom; they snap to neighboring edges and cannot overlap. A display dropped away from the others moves next to the nearest one, or back to where the drag started when no position keeps every display connected. Right-click to select the main display. Apply changes the real arrangement; Cancel discards the draft.
 - The pause control suspends automatic restore for 15 minutes. Successful main-display, rotation, or editor changes also pause it and notify you, so restore does not undo your edit immediately. The control appears when automatic restore is enabled.
 - Saved-layout rows let you restore the current set, double-click a name to rename it, or delete with a two-step confirmation. The confirmation hides the other row details without moving the row and clears itself after 5 seconds.
@@ -71,7 +71,7 @@ The app has no accounts or telemetry. Network activity is limited to update chec
 ## Known limitations
 
 - Two monitors whose hardware identity is truly indistinguishable need a port-order heuristic. Same-model monitors with distinct ColorSync UUIDs can still be identified. The display-details badge highlights ambiguous units.
-- Rotation uses an IOKit framebuffer probe. Two displays with the same vendor, model, and serial number can resolve to the same service, so rotating one may affect the other.
+- Rotation uses a private macOS interface, so a macOS update can break it.
 - The app cannot use the App Sandbox for display configuration and is not distributed through the Mac App Store.
 - GPU switching, such as eGPU reconnects, can invalidate display UUIDs. You may need to save the layout again.
 - Available display modes can change after reconnect. If the saved mode is unavailable, the app selects a matching alternative.
