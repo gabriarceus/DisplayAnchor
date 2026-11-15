@@ -30,6 +30,9 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
     /// report 0.0.0.
     let currentVersion: String
 
+    /// Called right before the update window is requested.
+    var onPresentUpdate: (() -> Void)?
+
     private let config: AppConfig
     private let defaults = UserDefaults.standard
     private var userDriver: DeferredUpdateUserDriver?
@@ -98,6 +101,7 @@ final class UpdateController: NSObject, ObservableObject, SPUUpdaterDelegate {
     /// Shows the available update in Sparkle's update window, where the user
     /// chooses to install it, skip it, or be reminded later.
     func install() {
+        onPresentUpdate?()
         updater?.checkForUpdates()
     }
 

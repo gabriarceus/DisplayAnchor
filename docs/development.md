@@ -6,7 +6,7 @@ Read [Architecture](architecture.md) for ownership and display behavior, and [Co
 
 Development requires macOS 26 and Xcode 26 with Swift 6.2. [Package.swift](../Package.swift) defines the toolchain, deployment target, dependencies, and resource processing. SwiftPM resolves MenuBarKit from GitHub by default. When a sibling MenuBarKit checkout exists, the manifest selects that local package instead, which allows work on both projects together.
 
-The minimum remote MenuBarKit version is 1.3.0. Local builds use the sibling checkout's current contents, regardless of its tags; check its revision when validating a dependency update. build.sh records the resolved MenuBarKit revision in the bundle's Info.plist, and the Settings footer shows it.
+The minimum remote MenuBarKit version is 1.4.0. Local builds use the sibling checkout's current contents, regardless of its tags; check its revision when validating a dependency update. build.sh records the resolved MenuBarKit revision in the bundle's Info.plist, and the Settings footer shows it.
 
 SwiftPM caches the evaluated manifest. Adding or removing the sibling checkout can leave the old dependency choice cached even though the filesystem changed. Purge the package cache and reset package state after switching; reset alone does not clear the shared manifest cache.
 
@@ -35,14 +35,14 @@ Existing tests use Swift Testing and live in [Tests/DisplayAnchorTests](../Tests
 | LayoutModelsTests.swift             | EDID key format and the pinned display-set fingerprint                         |
 | ProfileStoreTests.swift             | Reload, corrupt-file backup, blocked writes, and failed-write recovery         |
 | LocalizationTests.swift             | Same keys and format specifiers in every bundled language, and display counts  |
-| DisplayGeometryTests.swift          | Translation and order independence, drift detection, and ambiguous identities  |
+| DisplayGeometryTests.swift          | Translation and order independence, drift detection, ambiguous identities, and rotation completion |
 | DisplayMapGeometryTests.swift       | Scaling, centering, adjacency, negative coordinates, and mixed orientations    |
 | LayoutEditingTests.swift            | Snapping, overlap resolution, connectivity, rotation, draft conversion, and indistinguishable displays |
 | DisplayCountIconTests.swift         | Template rendering, display-count bounds, and relative display sizes           |
 | UpdateControllerTests.swift         | No-update completion, update-check error handling, and skipped versions        |
 | UpdateChannelTests.swift            | Stable defaults, persisted opt-in, channel filtering, and stale RC responses   |
 | DeferredUpdateUserDriverTests.swift | Silent scheduled offers, single dismissal, and channel filtering of offers     |
-| DisplayMonitorTests.swift           | Event suppression while overlapping display changes of the app are applied     |
+| DisplayMonitorTests.swift           | Event suppression, reconfiguration tracking, and post-apply completion signals |
 
 Display writes and callback timing need real hardware. Select manual checks that exercise the changed behavior:
 

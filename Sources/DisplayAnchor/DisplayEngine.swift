@@ -176,8 +176,13 @@ enum DisplayEngine {
 
     /// Applies `profile` to the live displays. With `requireRotation`, a rejected
     /// rotation fails the apply before any mode or origin changes.
+    /// `isReconfiguring` reports whether CoreGraphics still has a reconfiguration in flight.
     @MainActor
-    static func applyLayout(_ profile: LayoutProfile, requireRotation: Bool = false) async -> LayoutApplyResult {
+    static func applyLayout(
+        _ profile: LayoutProfile,
+        requireRotation: Bool = false,
+        isReconfiguring: @MainActor () -> Bool = { false }
+    ) async -> LayoutApplyResult {
         let liveIDs = activeDisplayIDs()
         Log.engine.debug(
             "applyLayout: '\(profile.label, privacy: .public)' fp=\(profile.fingerprint, privacy: .public) saved=\(profile.displays.count) live=\(liveIDs.count)"
@@ -193,7 +198,7 @@ enum DisplayEngine {
             Log.engine.notice("applyLayout: no live displays → unmatched")
             return .unmatched
         }
-        guard let matched = resolve(profile: profile, liveIDs: liveIDs) else {
+        guard let initialMatched = resolve(profile: profile, liveIDs: liveIDs) else {
             Log.engine.notice("applyLayout: could not map saved displays to live set → unmatched")
             return .unmatched
         }
@@ -206,19 +211,33 @@ enum DisplayEngine {
         // cannot write it). macOS then resets the modes and origins of every
         // display, so they are configured only after that reset settles.
         // Best-effort unless `requireRotation`: a rejected rotation still lets geometry apply.
-        var rotationPending = false
-        for entry in matched {
-            let target = Int(entry.snapshot.rotation.rounded())
-            guard Int(CGDisplayRotation(entry.id).rounded()) != target else { continue }
+        var rotatedTargets: [DisplaySnapshot] = []
+        for entry in initialMatched {
+            let target = normalizedDegrees(entry.snapshot.rotation)
+            let current = normalizedDegrees(CGDisplayRotation(entry.id))
+            guard current != target else { continue }
             Log.engine.debug("applyLayout: rotate '\(entry.snapshot.name, privacy: .public)' → \(target)°")
             if setRotation(entry.id, degrees: target) {
-                rotationPending = true
+                rotatedTargets.append(entry.snapshot)
             } else if requireRotation {
                 return .failed("rotation rejected")
             }
         }
-        if rotationPending {
-            await waitForRotationToSettle()
+        var matched = initialMatched
+        if !rotatedTargets.isEmpty {
+            await waitForRotationToSettle(
+                targets: rotatedTargets,
+                isReconfiguring: isReconfiguring
+            )
+            if currentMatches(profile) {
+                Log.engine.notice("applyLayout: live layout settled matching '\(profile.label, privacy: .public)'")
+                return .applied
+            }
+            guard let refreshed = resolve(profile: profile, liveIDs: activeDisplayIDs()) else {
+                Log.engine.notice("applyLayout: live displays changed during rotation → unmatched")
+                return .unmatched
+            }
+            matched = refreshed
         }
 
         var configRef: CGDisplayConfigRef?
@@ -373,10 +392,16 @@ enum DisplayEngine {
 
     // MARK: - Rotation
 
+    /// Normalizes a display angle to `[0, 360)`.
+    static func normalizedDegrees(_ degrees: Double) -> Int {
+        let rounded = Int(degrees.rounded())
+        return ((rounded % 360) + 360) % 360
+    }
+
     /// Sets a display's rotation to `degrees` (0/90/180/270). Returns false, and
     /// changes nothing, when the display cannot be rotated.
     private static func setRotation(_ id: CGDirectDisplayID, degrees: Int) -> Bool {
-        let angle = ((degrees % 360) + 360) % 360
+        let angle = normalizedDegrees(Double(degrees))
         guard angle % 90 == 0 else {
             Log.engine.error("setRotation: unsupported angle \(degrees)°")
             return false
@@ -405,31 +430,95 @@ enum DisplayEngine {
         return true
     }
 
-    /// Returns when the live layout has stayed unchanged for `rotationQuietPeriod`,
-    /// or after `rotationSettleTimeout`.
-    @MainActor
-    private static func waitForRotationToSettle() async {
-        let clock = ContinuousClock()
-        let start = clock.now
-        var lastChange = start
-        var last = geometrySignature(snapshotCurrentLayout())
-        while !Task.isCancelled, clock.now - lastChange < rotationQuietPeriod,
-            clock.now - start < rotationSettleTimeout
-        {
-            try? await Task.sleep(for: .milliseconds(500))
-            let current = geometrySignature(snapshotCurrentLayout())
-            if current != last {
-                last = current
-                lastChange = clock.now
-            }
+    private static func findDisplay(
+        matching target: DisplaySnapshot,
+        in displays: [DisplaySnapshot]
+    ) -> DisplaySnapshot? {
+        displays.first { $0.stableID.snapshotKey == target.stableID.snapshotKey }
+            ?? displays.first { $0.stableID.identityKey == target.stableID.identityKey }
+    }
+
+    /// Returns whether applying `profile` against `live` changes any display's rotation.
+    static func involvesRotation(_ profile: LayoutProfile, live: [DisplaySnapshot]) -> Bool {
+        profile.displays.contains { target in
+            guard let current = findDisplay(matching: target, in: live) else { return false }
+            return normalizedDegrees(current.rotation) != normalizedDegrees(target.rotation)
         }
     }
 
-    // After a rotation macOS resets the modes and origins of every display in
-    // steps up to 5 s apart (measured on an Intel MacBook Pro with two monitors).
-    // shortcut: a fixed quiet period, raise it if a slower Mac resets later.
-    private static let rotationQuietPeriod: Duration = .seconds(7)
-    private static let rotationSettleTimeout: Duration = .seconds(30)
+    /// Returns whether every rotated display in `targets` appears in `live` with its
+    /// target angle and logical orientation while CoreGraphics is not reconfiguring.
+    static func isRotationComplete(
+        live: LayoutProfile,
+        targets: [DisplaySnapshot],
+        isReconfiguring: Bool
+    ) -> Bool {
+        guard !isReconfiguring else { return false }
+        return targets.allSatisfy { target in
+            guard let match = findDisplay(matching: target, in: live.displays) else {
+                return false
+            }
+            guard normalizedDegrees(match.rotation) == normalizedDegrees(target.rotation) else {
+                return false
+            }
+            // During a quarter turn macOS can report the new angle before
+            // swapping logical bounds between landscape and portrait.
+            let expectsPortrait = target.mode.height > target.mode.width
+            let expectsLandscape = target.mode.width > target.mode.height
+            if expectsPortrait {
+                return match.mode.height > match.mode.width
+            }
+            if expectsLandscape {
+                return match.mode.width > match.mode.height
+            }
+            return true
+        }
+    }
+
+    /// Waits until rotated displays match their targets, CoreGraphics finishes
+    /// reconfiguring, and geometry holds steady for `rotationStabilizationPeriod`,
+    /// or until `rotationSettleTimeout`.
+    @MainActor
+    private static func waitForRotationToSettle(
+        targets: [DisplaySnapshot],
+        isReconfiguring: @MainActor () -> Bool
+    ) async {
+        let clock = ContinuousClock()
+        let start = clock.now
+        var lastSignature = geometrySignature(snapshotCurrentLayout())
+        var stableSince: ContinuousClock.Instant? = nil
+
+        while !Task.isCancelled, clock.now - start < rotationSettleTimeout {
+            let live = snapshotCurrentLayout()
+            let currentSignature = geometrySignature(live)
+            let complete = isRotationComplete(
+                live: live,
+                targets: targets,
+                isReconfiguring: isReconfiguring()
+            )
+            if complete, currentSignature == lastSignature {
+                if let since = stableSince {
+                    if clock.now - since >= rotationStabilizationPeriod {
+                        let elapsedMs = Int((clock.now - start) / .milliseconds(1))
+                        Log.engine.debug("waitForRotationToSettle: complete in \(elapsedMs)ms")
+                        return
+                    }
+                } else {
+                    stableSince = clock.now
+                }
+            } else {
+                lastSignature = currentSignature
+                stableSince = complete ? clock.now : nil
+            }
+            try? await Task.sleep(for: rotationPollInterval)
+        }
+        let elapsedMs = Int((clock.now - start) / .milliseconds(1))
+        Log.engine.notice("waitForRotationToSettle: timed out after \(elapsedMs)ms")
+    }
+
+    private static let rotationPollInterval: Duration = .milliseconds(50)
+    private static let rotationStabilizationPeriod: Duration = .milliseconds(200)
+    private static let rotationSettleTimeout: Duration = .seconds(15)
 
     // MARK: - Diagnostics
 

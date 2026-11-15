@@ -96,8 +96,9 @@ jobs:
           mkdir -p appcast
           cp "build/${ZIP_NAME}" appcast/
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
-          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "appcast/${ZIP_NAME%.zip}.md"
-          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "build/release_notes.md" --count 1
+          SHA256=$(shasum -a 256 "build/${ZIP_NAME}" | awk '{print $1}')
+          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "appcast/${ZIP_NAME%.zip}.html"
+          python3 scripts/release_notes.py CHANGELOG.md "$VERSION" "build/release_notes.md" --count 1 --sha256 "$SHA256"
           echo "$SPARKLE_PRIVATE_KEY" | "$GENERATE_APPCAST" \
             --ed-key-file - \
             --embed-release-notes \

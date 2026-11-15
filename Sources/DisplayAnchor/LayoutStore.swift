@@ -31,9 +31,18 @@ final class LayoutStore: ObservableObject {
     let notifier = Notifier()
     private let monitor = DisplayMonitor()
 
+    private struct PostRotationGuard {
+        let profile: LayoutProfile
+        let expiresAt: ContinuousClock.Instant
+        var remainingAttempts: Int
+    }
+
+    private static let postRotationGuardDuration: Duration = .seconds(8)
+
     var onStateChange: (() -> Void)?
     private var justRestoredTask: Task<Void, Never>?
     private var snoozeTask: Task<Void, Never>?
+    private var postRotationGuard: PostRotationGuard?
 
     init(config: AppConfig) {
         self.config = config
@@ -43,6 +52,8 @@ final class LayoutStore: ObservableObject {
         notifier.requestAuthorizationIfNeeded()
         monitor.settleSeconds = { [config] in config.settleSeconds }
         monitor.onDisplaysSettled = { [weak self] in self?.handleDisplaysSettled() }
+        monitor.onReconfigurationCompleted = { [weak self] in self?.handleLiveConfigurationIdle() }
+        monitor.onApplyFinished = { [weak self] in self?.handleLiveConfigurationIdle() }
         monitor.start()
         refreshCurrentState()
         // Displays configured before launch, as at login, send no further callback.
@@ -80,6 +91,7 @@ final class LayoutStore: ObservableObject {
     @discardableResult
     func saveCurrentLayout(label: String) -> Bool {
         guard !isApplying else { return false }
+        postRotationGuard = nil
         var snapshot = DisplayEngine.snapshotCurrentLayout()
         snapshot.label = label.trimmingCharacters(in: .whitespaces).isEmpty ? defaultLabel(for: snapshot) : label
         guard profiles.save(snapshot) else { return false }
@@ -151,25 +163,88 @@ final class LayoutStore: ObservableObject {
     }
 
     /// Applies `profile` as a live edit with reconfiguration callbacks suppressed,
-    /// flashing on success and re-reading state immediately and once more for
-    /// changes that settle late. A successful change also pauses auto-restore.
-    /// Ignored while another apply is in progress.
+    /// flashing on success and arming post-rotation drift monitoring when rotation occurred.
+    /// A successful change also pauses auto-restore. Ignored while another apply is in progress.
     private func performLiveChange(_ profile: LayoutProfile, requireRotation: Bool = false) {
         guard !isApplying else { return }
-        isApplying = true
+        postRotationGuard = nil
+        let rotated = DisplayEngine.involvesRotation(profile, live: DisplayEngine.snapshotCurrentLayout().displays)
         Task {
-            let result = await monitor.performApplying {
-                await DisplayEngine.applyLayout(profile, requireRotation: requireRotation)
-            }
-            isApplying = false
+            let result = await runApply(profile, requireRotation: requireRotation)
+            refreshCurrentState()
             if case .applied = result {
                 flashRestored()
                 snoozeAfterManualChange()
+                armPostRotationGuardIfNeeded(for: profile, wantedRotation: rotated)
+            }
+            recheckIfDisplaySetChanged(since: profile)
+        }
+    }
+
+    private func runApply(_ profile: LayoutProfile, requireRotation: Bool = false) async -> LayoutApplyResult {
+        isApplying = true
+        let result = await monitor.performApplying {
+            await DisplayEngine.applyLayout(
+                profile,
+                requireRotation: requireRotation,
+                isReconfiguring: { [monitor] in monitor.isReconfiguring }
+            )
+        }
+        isApplying = false
+        return result
+    }
+
+    private func handleLiveConfigurationIdle() {
+        guard !isApplying else { return }
+        refreshCurrentState()
+        repairPostRotationDriftIfNeeded()
+    }
+
+    private func armPostRotationGuardIfNeeded(for profile: LayoutProfile, wantedRotation: Bool) {
+        guard wantedRotation,
+            !DisplayEngine.involvesRotation(profile, live: currentDisplays)
+        else { return }
+        postRotationGuard = PostRotationGuard(
+            profile: profile,
+            expiresAt: ContinuousClock.now + Self.postRotationGuardDuration,
+            remainingAttempts: 2
+        )
+    }
+
+    /// Re-applies the target geometry if a slow GPU resets modes or origins
+    /// after a rotation settle. Stops once the window expires, the display set
+    /// changes, or remaining attempts run out.
+    private func repairPostRotationDriftIfNeeded() {
+        guard var activeGuard = postRotationGuard else { return }
+        guard ContinuousClock.now <= activeGuard.expiresAt, activeGuard.remainingAttempts > 0 else {
+            postRotationGuard = nil
+            return
+        }
+        guard !isApplying, !monitor.isReconfiguring else { return }
+        guard currentFingerprint == activeGuard.profile.fingerprint else {
+            postRotationGuard = nil
+            return
+        }
+        guard !DisplayEngine.currentMatches(activeGuard.profile) else { return }
+
+        activeGuard.remainingAttempts -= 1
+        let remaining = activeGuard.remainingAttempts
+        let expiresAt = activeGuard.expiresAt
+        let targetProfile = activeGuard.profile
+        postRotationGuard = nil
+
+        Log.restore.notice("post-rotation drift detected; re-applying geometry (remaining=\(remaining))")
+        Task {
+            let result = await runApply(targetProfile)
+            if case .applied = result, remaining > 0, ContinuousClock.now <= expiresAt {
+                postRotationGuard = PostRotationGuard(
+                    profile: targetProfile,
+                    expiresAt: expiresAt,
+                    remainingAttempts: remaining
+                )
             }
             refreshCurrentState()
-            recheckIfDisplaySetChanged(since: profile)
-            try? await Task.sleep(for: .seconds(1.2))
-            refreshCurrentState()
+            recheckIfDisplaySetChanged(since: targetProfile)
         }
     }
 
@@ -255,9 +330,10 @@ final class LayoutStore: ObservableObject {
 
     private func apply(_ profile: LayoutProfile, auto: Bool) async {
         guard !isApplying else { return }
-        isApplying = true
-        let result = await monitor.performApplying { await DisplayEngine.applyLayout(profile) }
-        isApplying = false
+        postRotationGuard = nil
+        let rotated = DisplayEngine.involvesRotation(profile, live: DisplayEngine.snapshotCurrentLayout().displays)
+        let result = await runApply(profile)
+        refreshCurrentState()
         Log.restore.notice(
             "apply(auto: \(auto)): '\(profile.label, privacy: .public)' → \(String(describing: result), privacy: .public)"
         )
@@ -267,6 +343,7 @@ final class LayoutStore: ObservableObject {
             lastRestoreLabel = profile.label
             lastRestoreAt = Date()
             flashRestored()
+            armPostRotationGuardIfNeeded(for: profile, wantedRotation: rotated)
             if config.notifyOnRestore {
                 notifier.send(
                     title: config.l("notification_restored_title"),
@@ -293,7 +370,6 @@ final class LayoutStore: ObservableObject {
             }
         }
 
-        refreshCurrentState()
         recheckIfDisplaySetChanged(since: profile)
     }
 

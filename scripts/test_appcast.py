@@ -127,34 +127,91 @@ class ReleaseNotesTests(unittest.TestCase):
         changelog = (
             "# Changelog\n\n## [Unreleased]\n\n- Future work\n\n"
             "## [1.1.0] - 2026-11-04\n\n### Added\n\n- Show **release notes** with [Sparkle](https://sparkle-project.org).\n\n"
-            "## [1.0.1] - 2026-08-20\n\n- Fix\n\n## [1.0.0] - 2026-08-11\n\n- First\n\n## [0.9.0]\n\n- Too old\n"
+            "## [1.0.1] - 2026-08-20\n\n### Fixed\n\n- Fix\n\n"
+            "## [1.0.0] - 2026-08-11\n\n### Changed\n\n- First\n\n"
+            "## [0.9.0]\n\n- Too old\n"
         )
         self.assertEqual(
             release_notes(changelog, "1.1.0"),
-            "## 1.1.0 — Nov 4, 2026\n\n### Added\n\n- Show **release notes** with [Sparkle](https://sparkle-project.org).\n\n"
-            "## 1.0.1 — Aug 20, 2026\n\n- Fix\n\n## 1.0.0 — Aug 11, 2026\n\n- First\n",
+            "## 1.1.0 — Nov 4, 2026\n\n### New\n\n- Show **release notes** with [Sparkle](https://sparkle-project.org).\n\n"
+            "## 1.0.1 — Aug 20, 2026\n\n### Bug fixes\n\n- Fix\n\n"
+            "## 1.0.0 — Aug 11, 2026\n\n### Improvements\n\n- First\n",
         )
 
     def test_unreleased_is_titled_with_the_version_being_published(self):
-        notes = release_notes("## [Unreleased]\n\n- New controls\n\n## [1.0.0] - 2026-08-11\n\n- Old work", "1.1.0-rc4")
-        self.assertEqual(notes, "## 1.1.0-rc4\n\n- New controls\n\n## 1.0.0 — Aug 11, 2026\n\n- Old work\n")
+        notes = release_notes(
+            "## [Unreleased]\n\n### Added\n\n- New controls\n\n## [1.0.0] - 2026-08-11\n\n### Added\n\n- Old work",
+            "1.1.0-rc4",
+        )
+        self.assertEqual(
+            notes,
+            "## 1.1.0-rc4\n\n### New\n\n- New controls\n\n## 1.0.0 — Aug 11, 2026\n\n### New\n\n- Old work\n",
+        )
 
     def test_maintenance_entries_stay_out_of_the_update_window(self):
         changelog = (
             "## [Unreleased]\n\n### Fixed\n\n- Crash\n\n### Maintenance\n\n- Faster CI\n\n### Removed\n\n- Old option\n\n"
             "## [1.0.0] - 2026-08-11\n\n### Maintenance\n\n- Tooling only\n"
         )
-        self.assertEqual(release_notes(changelog, "1.1.0"), "## 1.1.0\n\n### Fixed\n\n- Crash\n\n### Removed\n\n- Old option\n")
+        self.assertEqual(
+            release_notes(changelog, "1.1.0"),
+            "## 1.1.0\n\n### Bug fixes\n\n- Crash\n\n### Removed\n\n- Old option\n",
+        )
 
-    def test_count_limits_the_number_of_release_sections(self):
+    def test_single_release_markdown_omits_version_heading_and_adds_sha256_footer(self):
         changelog = (
-            "## [1.1.0] - 2026-11-04\n\n### Added\n\n- Feature\n\n"
+            "## [1.1.0] - 2026-11-04\n\n"
+            "Release summary.\n\n"
+            "### Added\n\n- Feature\n  - Sub-detail\n\n"
             "## [1.0.0] - 2026-08-11\n\n- Old\n"
         )
+        notes = release_notes(changelog, "1.1.0", count=1, sha256="abc123")
         self.assertEqual(
-            release_notes(changelog, "1.1.0", count=1),
-            "## 1.1.0 — Nov 4, 2026\n\n### Added\n\n- Feature\n",
+            notes,
+            "Release summary.\n\n"
+            "### New\n\n- Feature\n  - Sub-detail\n\n"
+            "---\n\n"
+            "**Requires macOS 26 or later** (Universal Binary for Apple Silicon and Intel).\n"
+            "**SHA-256:** `abc123`\n",
         )
+
+    def test_html_renders_badges_inline_formatting_sublists_and_collapsible_older_releases(self):
+        changelog = (
+            "## [1.2.0] - 2026-11-05\n\n"
+            "### Added\n\n"
+            "- Added **notes** with `code` and [Sparkle](https://sparkle-project.org).\n"
+            "  - Indented detail\n\n"
+            "### Changed\n\n"
+            "- Faster checks.\n\n"
+            "### Fixed\n\n"
+            "- Escaped <angle> brackets.\n\n"
+            "### Removed\n\n"
+            "- Legacy mode.\n\n"
+            "### Maintenance\n\n"
+            "- Internal cleanup.\n\n"
+            "## [1.1.0] - 2026-11-04\n\n"
+            "Older intro.\n\n"
+            "### Fixed\n\n"
+            "- Previous fix.\n"
+        )
+        html_notes = release_notes(changelog, "1.2.0", fmt="html")
+        self.assertNotIn("<!DOCTYPE", html_notes)
+        self.assertNotIn("<body", html_notes)
+        self.assertIn("<h1>DisplayAnchor 1.2.0</h1>", html_notes)
+        self.assertIn('<span class="badge badge-added">NEW</span>', html_notes)
+        self.assertIn('<span class="badge badge-changed">IMPROVE</span>', html_notes)
+        self.assertIn('<span class="badge badge-fixed">FIX</span>', html_notes)
+        self.assertIn('<span class="badge badge-removed">REMOVED</span>', html_notes)
+        self.assertIn("<strong>notes</strong>", html_notes)
+        self.assertIn("<code>code</code>", html_notes)
+        self.assertIn('<a href="https://sparkle-project.org">Sparkle</a>', html_notes)
+        self.assertIn('<ul class="note-sublist"><li>Indented detail</li></ul>', html_notes)
+        self.assertIn("Escaped &lt;angle&gt; brackets.", html_notes)
+        self.assertNotIn("Internal cleanup", html_notes)
+        self.assertIn("<h2>DisplayAnchor 1.1.0</h2>", html_notes)
+        self.assertIn("<p>Older intro.</p>", html_notes)
+        self.assertIn("<details>\n<summary>Show DisplayAnchor 1.1.0 release notes</summary>", html_notes)
+        self.assertIn("Previous fix.", html_notes)
 
     def test_missing_or_internal_only_notes_fail_instead_of_publishing_an_empty_window(self):
         for changelog in (

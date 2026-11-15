@@ -180,4 +180,77 @@ struct DisplayGeometryTests {
         let ambiguous = DisplayEngine.ambiguousIdentityKeys(in: [laptop, twin1, twin2, uniqueExternal])
         #expect(ambiguous == Set(["42:99:0:false"]))
     }
+
+    // MARK: - Deterministic Rotation Completion
+
+    @Test func isRotationCompleteReturnsFalseWhileCoreGraphicsIsReconfiguring() {
+        let target = makeDisplay(
+            uuid: "d1", width: 1080, height: 1920, pixelWidth: 1080, pixelHeight: 1920, rotation: 90)
+        let live = LayoutProfile(fingerprint: "fp", label: "", savedAt: Date(), displays: [target])
+
+        #expect(!DisplayEngine.isRotationComplete(live: live, targets: [target], isReconfiguring: true))
+    }
+
+    @Test func isRotationCompleteReturnsFalseWhenTargetDisplayIsMissing() {
+        let target = makeDisplay(
+            uuid: "d1", width: 1080, height: 1920, pixelWidth: 1080, pixelHeight: 1920, rotation: 90)
+        let other = makeDisplay(uuid: "d2", width: 1920, height: 1080, pixelWidth: 1920, pixelHeight: 1080, rotation: 0)
+        let live = LayoutProfile(fingerprint: "fp", label: "", savedAt: Date(), displays: [other])
+
+        #expect(!DisplayEngine.isRotationComplete(live: live, targets: [target], isReconfiguring: false))
+    }
+
+    @Test func isRotationCompleteReturnsFalseWhenAngleDoesNotMatchTarget() {
+        let target = makeDisplay(
+            uuid: "d1", width: 1080, height: 1920, pixelWidth: 1080, pixelHeight: 1920, rotation: 90)
+        let current = makeDisplay(
+            uuid: "d1", width: 1920, height: 1080, pixelWidth: 1920, pixelHeight: 1080, rotation: 0)
+        let live = LayoutProfile(fingerprint: "fp", label: "", savedAt: Date(), displays: [current])
+
+        #expect(!DisplayEngine.isRotationComplete(live: live, targets: [target], isReconfiguring: false))
+    }
+
+    @Test func isRotationCompleteReturnsFalseBeforeQuarterTurnSwapsDimensions() {
+        let target = makeDisplay(
+            uuid: "d1", width: 1080, height: 1920, pixelWidth: 1080, pixelHeight: 1920, rotation: 90)
+        let intermediate = makeDisplay(
+            uuid: "d1", width: 1920, height: 1080, pixelWidth: 1920, pixelHeight: 1080, rotation: 90
+        )
+        let live = LayoutProfile(fingerprint: "fp", label: "", savedAt: Date(), displays: [intermediate])
+
+        #expect(!DisplayEngine.isRotationComplete(live: live, targets: [target], isReconfiguring: false))
+    }
+
+    @Test func isRotationCompleteReturnsTrueWhenQuarterTurnAngleAndDimensionsMatch() {
+        let target = makeDisplay(
+            uuid: "d1", width: 1080, height: 1920, pixelWidth: 1080, pixelHeight: 1920, rotation: 90)
+        let live = LayoutProfile(fingerprint: "fp", label: "", savedAt: Date(), displays: [target])
+
+        #expect(DisplayEngine.isRotationComplete(live: live, targets: [target], isReconfiguring: false))
+    }
+
+    @Test func isRotationCompleteReturnsTrueForHalfTurnWithLandscapeDimensions() {
+        let target = makeDisplay(
+            uuid: "d1", width: 1920, height: 1080, pixelWidth: 1920, pixelHeight: 1080, rotation: 180)
+        let live = LayoutProfile(fingerprint: "fp", label: "", savedAt: Date(), displays: [target])
+
+        #expect(DisplayEngine.isRotationComplete(live: live, targets: [target], isReconfiguring: false))
+    }
+
+    @Test func involvesRotationDetectsAngleChangeAndNormalizesDegrees() {
+        #expect(DisplayEngine.normalizedDegrees(360) == 0)
+        #expect(DisplayEngine.normalizedDegrees(-90) == 270)
+
+        let livePortrait = makeDisplay(
+            uuid: "d1", width: 1080, height: 1920, pixelWidth: 1080, pixelHeight: 1920, rotation: 270
+        )
+        let sameProfile = LayoutProfile(fingerprint: "fp", label: "", savedAt: Date(), displays: [livePortrait])
+        #expect(!DisplayEngine.involvesRotation(sameProfile, live: [livePortrait]))
+
+        let targetLandscape = makeDisplay(
+            uuid: "d1", width: 1920, height: 1080, pixelWidth: 1920, pixelHeight: 1080, rotation: 0
+        )
+        let rotatedProfile = LayoutProfile(fingerprint: "fp", label: "", savedAt: Date(), displays: [targetLandscape])
+        #expect(DisplayEngine.involvesRotation(rotatedProfile, live: [livePortrait]))
+    }
 }

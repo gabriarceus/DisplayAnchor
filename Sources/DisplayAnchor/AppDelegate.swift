@@ -6,6 +6,8 @@ import SwiftUI
 /// AppKit shell: owns the status item and the panel that hosts all UI.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private static let updateNotificationIdentifier = "update-available"
+
     private let config = AppConfig()
     private lazy var updates = UpdateController(config: config)
     private var store: LayoutStore?
@@ -66,6 +68,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.renderStatusItem()
                 self?.announceAvailableUpdate()
             }
+        updates.onPresentUpdate = { [weak self] in
+            self?.statusItemController?.dismiss()
+            NSApp.activate()
+        }
+        store.notifier.onNotificationClick = { [weak self] identifier in
+            guard identifier == Self.updateNotificationIdentifier else { return }
+            self?.updates.install()
+        }
         applyPanelAppearance()
         store.start()
         renderStatusItem()
@@ -79,7 +89,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard config.checkForUpdates, let version = updates.consumeUnannouncedUpdate() else { return }
         store?.notifier.send(
             title: config.l("notification_update_title"),
-            body: config.l("notification_update_body", version)
+            body: config.l("notification_update_body", version),
+            identifier: Self.updateNotificationIdentifier
         )
     }
 

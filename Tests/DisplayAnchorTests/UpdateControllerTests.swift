@@ -54,6 +54,16 @@ struct UpdateControllerTests {
         #expect(controller.status == .upToDate)
     }
 
+    @Test func installNotifiesPresentationHandler() {
+        let controller = UpdateController(config: AppConfig())
+        var presented = false
+        controller.onPresentUpdate = { presented = true }
+
+        controller.install()
+
+        #expect(presented)
+    }
+
     private func makeUpdater() -> SPUUpdater {
         SPUUpdater(
             hostBundle: .main,

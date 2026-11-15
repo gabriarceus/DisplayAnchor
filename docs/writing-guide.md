@@ -44,6 +44,7 @@ CHANGELOG.md follows Keep a Changelog. Its sections become the release notes in 
 - Add entries under Unreleased only. A released section changes only to fix a mistake.
 - Use the categories Added, Changed, Fixed, Maintenance, and Removed, in this order, and only those a release needs. Keep entries in alphabetical order within a category.
 - Write Added, Changed, Fixed, and Removed for users: what they will notice, in the words the app uses. No file names, tools, or internal terms.
+- Keep each entry to one short, direct sentence. Use indented sub-bullets only when a larger change needs several points. `release_notes.py` maps these categories to New, Improvements, Bug fixes, and Removed in the update window and on the GitHub Release page.
 - Put changes users do not notice under Maintenance: build and release tooling, tests, documentation, and dependency updates. Maintenance stays in the file but is left out of the update window.
 - One change gets one entry. Small fixes for the same change share that entry.
 

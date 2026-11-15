@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The update window shows these notes without the Maintenance entries.
 
+## [1.3.0] - 2026-11-15
+
+### Changed
+
+- Display rotation finishes as soon as macOS reports the new orientation and steady geometry instead of waiting a fixed delay, while still repairing late resets from slower GPUs.
+- The update window shows category badges for each change and collapses the two previous versions under expandable sections.
+
+### Fixed
+
+- Choosing Install in Settings or clicking the update notification closes the panel and brings the update window to the front.
+
+### Maintenance
+
+- Raised the minimum MenuBarKit version to 1.4.0.
+- Release pages include the archive SHA-256 checksum and map changelog categories to user-facing headings.
+
 ## [1.2.2] - 2026-11-13
 
 ### Fixed
