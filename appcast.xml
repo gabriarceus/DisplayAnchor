@@ -3,60 +3,139 @@
     <channel>
         <title>DisplayAnchor</title>
         <item>
-            <title>1.2.2</title>
-            <pubDate>Fri, 13 Nov 2026 17:34:34 +0000</pubDate>
+            <title>1.3.0</title>
+            <pubDate>Sun, 15 Nov 2026 16:15:21 +0000</pubDate>
             <link>https://github.com/gabriarceus/DisplayAnchor</link>
-            <sparkle:version>9</sparkle:version>
-            <sparkle:shortVersionString>1.2.2</sparkle:shortVersionString>
+            <sparkle:version>10</sparkle:version>
+            <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown">## 1.2.2 — Nov 13, 2026
-
-### Fixed
-
-- Rotating a display from the right-click menu, or restoring a saved layout with a rotated display, turns the picture and keeps the resolutions and the arrangement of all displays. A rotation can take several seconds, and the panel controls wait until it ends.
-
-## 1.2.1 — Nov 7, 2026
-
-### Fixed
-
-- The right-click Rotate menu on a display shows a checkmark for the currently active rotation angle.
-- When the language setting is set to System, the app follows the macOS system language instead of defaulting to English.
-
-## 1.2.0 — Nov 5, 2026
-
-### Added
-
-- In Display details, a Copy button appears when the pointer is over a display and copies the diagnostics of that display only. The button for every display is now called Copy all.
-- The Settings footer shows the MenuBarKit version below the app version.
-
-### Changed
-
-- Action buttons and links in the panel, such as Display details, Copy all, delete, the layout editor controls, and the GitHub link, show an outline, so they no longer look like labels.
-- Dates, display details, and tint names follow the language selected in the app. The built-in display shows the name macOS gives it.
-- Display details list each value on its own labeled line. Hardware identifiers are no longer formatted like quantities, and a serial number the monitor does not report shows "—" instead of 0, also in copied diagnostics.
-- In the layout editor, a display dropped away from the others moves next to the nearest display, because macOS cannot use a detached display. Displays stay inside the editor area, which centers on the arrangement after each move without changing the zoom.
-- The Apply button of the layout editor looks disabled while there is nothing to apply.
-- The delete confirmation of a saved layout appears faster, hides the other row details without moving the row, and stays for 5 seconds.
-- The Display details bar, with Copy all, stays in place while you scroll the list of displays.
-- The GitHub link in Settings shows the GitHub logo and the word GitHub instead of the repository name.
-- The menu bar and saved-layout icons draw each display at its relative size and height in the arrangement, and the main display is no longer drawn smaller than the others.
-- The update window shows what is new in the latest three versions, with formatted headings and lists, and lets you install the update, skip the version, or be reminded later.
-- The wait setting in Settings has a shorter label and a smaller field.
-- When you rename a saved layout, Escape cancels the change, a click on an empty part of the panel or closing the panel keeps the new name, and the row keeps its height.
-
-### Fixed
-
-- An unreadable saved-layouts file that cannot be backed up is no longer overwritten by the next save.
-- Automatic restore also runs when the app starts, for example at login, if the displays differ from the saved layout.
-- Automatic restore no longer reacts to the app's own display changes when two of them overlap, for example a restore during a rotation.
-- Check now is disabled while an update waits to be installed, instead of doing nothing; Install shows that update.
-- In the layout editor, two monitors that macOS cannot tell apart can be moved and made the main display separately.
-- Launch at login explains when macOS needs approval, with a button that opens Login Items, and when macOS cannot register the app.
-- Rotating one of two same-model monitors with different serial numbers no longer rotates the other one.
-- Skipping a version in the update window removes the update indicator right away.
-- The wait field in Settings stops editing on Escape or on a click elsewhere in the panel.
+            <description>&lt;style&gt;
+.release-notes {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.release-notes h1 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+}
+.release-notes h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 10px;
+}
+.release-notes h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 14px 0 8px;
+}
+.release-notes p {
+    margin: 0 0 10px;
+}
+.release-notes hr {
+    border: 0;
+    border-top: 1px solid rgba(128, 128, 128, 0.35);
+    margin: 16px 0;
+}
+.release-notes code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(128, 128, 128, 0.2);
+}
+.release-notes .note-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 0 10px;
+}
+.release-notes .note-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.release-notes .badge {
+    display: inline-block;
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+    color: #ffffff;
+    text-transform: uppercase;
+}
+.release-notes .badge-added { background: #2da44e; }
+.release-notes .badge-changed { background: #6e40c9; }
+.release-notes .badge-fixed { background: #d97706; }
+.release-notes .badge-removed { background: #cf222e; }
+.release-notes .note-text {
+    flex: 1;
+    min-width: 0;
+}
+.release-notes .note-sublist {
+    margin: 4px 0 0;
+    padding-left: 14px;
+    list-style-type: none;
+}
+.release-notes .note-sublist li::before {
+    content: "– ";
+    opacity: 0.75;
+}
+.release-notes .plain-list {
+    margin: 0 0 10px;
+    padding-left: 20px;
+}
+.release-notes details {
+    margin: 8px 0 0;
+}
+.release-notes summary {
+    cursor: pointer;
+    font-weight: 500;
+    user-select: none;
+}
+.release-notes details[open] summary {
+    margin-bottom: 10px;
+}
+&lt;/style&gt;
+&lt;div class="release-notes"&gt;
+&lt;h1&gt;DisplayAnchor 1.3.0&lt;/h1&gt;
+&lt;h3&gt;Improvements&lt;/h3&gt;
+&lt;div class="note-list"&gt;
+&lt;div class="note-item"&gt;&lt;span class="badge badge-changed"&gt;IMPROVE&lt;/span&gt;&lt;div class="note-text"&gt;Display rotation finishes as soon as macOS reports the new orientation and steady geometry instead of waiting a fixed delay, while still repairing late resets from slower GPUs.&lt;/div&gt;&lt;/div&gt;
+&lt;div class="note-item"&gt;&lt;span class="badge badge-changed"&gt;IMPROVE&lt;/span&gt;&lt;div class="note-text"&gt;The update window shows category badges for each change and collapses the two previous versions under expandable sections.&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;h3&gt;Bug fixes&lt;/h3&gt;
+&lt;div class="note-list"&gt;
+&lt;div class="note-item"&gt;&lt;span class="badge badge-fixed"&gt;FIX&lt;/span&gt;&lt;div class="note-text"&gt;Choosing Install in Settings or clicking the update notification closes the panel and brings the update window to the front.&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;hr&gt;
+&lt;h2&gt;DisplayAnchor 1.2.2&lt;/h2&gt;
+&lt;details&gt;
+&lt;summary&gt;Show DisplayAnchor 1.2.2 release notes&lt;/summary&gt;
+&lt;h3&gt;Bug fixes&lt;/h3&gt;
+&lt;div class="note-list"&gt;
+&lt;div class="note-item"&gt;&lt;span class="badge badge-fixed"&gt;FIX&lt;/span&gt;&lt;div class="note-text"&gt;Rotating a display from the right-click menu, or restoring a saved layout with a rotated display, turns the picture and keeps the resolutions and the arrangement of all displays. A rotation can take several seconds, and the panel controls wait until it ends.&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/details&gt;
+&lt;hr&gt;
+&lt;h2&gt;DisplayAnchor 1.2.1&lt;/h2&gt;
+&lt;details&gt;
+&lt;summary&gt;Show DisplayAnchor 1.2.1 release notes&lt;/summary&gt;
+&lt;h3&gt;Bug fixes&lt;/h3&gt;
+&lt;div class="note-list"&gt;
+&lt;div class="note-item"&gt;&lt;span class="badge badge-fixed"&gt;FIX&lt;/span&gt;&lt;div class="note-text"&gt;The right-click Rotate menu on a display shows a checkmark for the currently active rotation angle.&lt;/div&gt;&lt;/div&gt;
+&lt;div class="note-item"&gt;&lt;span class="badge badge-fixed"&gt;FIX&lt;/span&gt;&lt;div class="note-text"&gt;When the language setting is set to System, the app follows the macOS system language instead of defaulting to English.&lt;/div&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/details&gt;
+&lt;/div&gt;
 </description>
-            <enclosure url="https://github.com/gabriarceus/DisplayAnchor/releases/download/v1.2.2/DisplayAnchor-1.2.2.zip" length="4156146" type="application/octet-stream" sparkle:edSignature="JY//peChTSYxP/gt2NprAiMPlf9SmEzEC/w2myDKXCQYq8Igp9aw2P2OyUv7IcxNbwkfGQ0A5yZIm7CqYzp5Ag==" />
+            <enclosure url="https://github.com/gabriarceus/DisplayAnchor/releases/download/v1.3.0/DisplayAnchor-1.3.0.zip" length="4188082" type="application/octet-stream" sparkle:edSignature="7MbwOcU9sWyi20K/V5bTiiJTVoa6WUsMGvIPwMQaSX516iGFQ5IufzOTmFRIPU+mj3+uvic0q9EpQkjdYNknCQ==" />
         </item>
         <item>
             <title>1.1.0-rc3</title>
